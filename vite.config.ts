@@ -1,15 +1,20 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import type { Plugin } from "vite";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+import { currentUpdateMetadata } from "./src/app/update/updateMetadata";
+import { SITE_BASE_PATH } from "./src/config/site";
+
 export default defineConfig(({ command }) => {
-  const base = command === "build" ? "/ebk-metro/" : "/";
+  const base = command === "build" ? SITE_BASE_PATH : "/";
 
   return {
     base,
 
     plugins: [
+      updateMetadataAssetPlugin(),
       react(),
       tailwindcss(),
       VitePWA({
@@ -86,3 +91,17 @@ export default defineConfig(({ command }) => {
     },
   };
 });
+
+function updateMetadataAssetPlugin(): Plugin {
+  return {
+    name: "metro-update-metadata-asset",
+    apply: "build",
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "update-metadata.json",
+        source: `${JSON.stringify(currentUpdateMetadata, null, 2)}\n`,
+      });
+    },
+  };
+}
