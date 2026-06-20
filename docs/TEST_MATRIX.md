@@ -2,59 +2,51 @@
 
 ## Automated checks
 
-| Check                   | Scope                                                                                         | Status |
-| ----------------------- | --------------------------------------------------------------------------------------------- | ------ |
-| `npm run test:run`      | Unit + component scenarios for time, schedules, stations, destination, settings, install flow | Passed |
-| `npm run typecheck`     | TypeScript build graph                                                                        | Passed |
-| `npm run lint`          | ESLint + React rules                                                                          | Passed |
-| `npm run build`         | Data validation + production bundle + PWA generation                                          | Passed |
-| `npm run validate:data` | Schedule consistency, counts, missing combinations                                            | Passed |
+| Check                   | Scope                                                     |
+| ----------------------- | --------------------------------------------------------- |
+| `npm run validate:data` | Schedule consistency, counts, station graph integrity     |
+| `npm run typecheck`     | TypeScript build graph                                    |
+| `npm run lint`          | ESLint and React Hooks rules                              |
+| `npm run format:check`  | Prettier formatting validation                            |
+| `npm run test:run`      | Unit and component behavior                               |
+| `npm run build`         | Validation, TypeScript build, Vite bundle, PWA generation |
 
-## Station and direction matrix
+## Time and operating-day coverage
 
-| Station              | Toward Prospekt Kosmonavtov | Toward Botanicheskaya | Notes                             |
-| -------------------- | --------------------------- | --------------------- | --------------------------------- |
-| Prospekt Kosmonavtov | No                          | Yes                   | Terminus, direction auto-selected |
-| Uralmash             | Yes                         | Yes                   | Intermediate                      |
-| Mashinostroiteley    | Yes                         | Yes                   | Intermediate                      |
-| Uralskaya            | Yes                         | Yes                   | Intermediate                      |
-| Dinamo               | Yes                         | Yes                   | Intermediate                      |
-| Ploshchad 1905 Goda  | Yes                         | Yes                   | Intermediate                      |
-| Geologicheskaya      | Yes                         | Yes                   | Intermediate                      |
-| Chkalovskaya         | Yes                         | Yes                   | Intermediate                      |
-| Botanicheskaya       | Yes                         | No                    | Terminus, direction auto-selected |
+| Scenario                                     | Coverage                                                             |
+| -------------------------------------------- | -------------------------------------------------------------------- |
+| `31`, `30`, `1`, `0`, `15` second boundaries | `src/domain/metro/schedule.test.ts`                                  |
+| Before opening                               | `src/domain/metro/schedule.test.ts`, `src/pages/TrainsPage.test.tsx` |
+| After closing                                | `src/domain/metro/schedule.test.ts`                                  |
+| Last train and post-midnight arrival         | `src/domain/metro/schedule.test.ts`                                  |
+| Friday to Saturday                           | `src/domain/metro/schedule.test.ts`                                  |
+| Sunday to Monday                             | `src/domain/metro/schedule.test.ts`                                  |
+| Yekaterinburg timezone handling              | `src/domain/time/time.test.ts`, metadata validation                  |
 
-## Time and state matrix
+## Route and destination coverage
 
-| Scenario                                | Covered by                                                          |
-| --------------------------------------- | ------------------------------------------------------------------- |
-| Before opening                          | `schedule.test.ts`, `TrainsPage.test.tsx`                           |
-| Active daytime service                  | `schedule.test.ts`, `travel.test.ts`, `App.test.tsx`                |
-| Last train                              | `schedule.test.ts`, `TrainsPage.test.tsx`                           |
-| After closing                           | `schedule.test.ts`, `App.test.tsx`                                  |
-| Crossing midnight                       | `schedule.test.ts`, `time.service` tests                            |
-| Friday to Saturday                      | `schedule.test.ts`                                                  |
-| Sunday to Monday                        | `schedule.test.ts`                                                  |
-| Weekend / weekday switching             | `schedule.test.ts`                                                  |
-| Destination selection and trip estimate | `travel.test.ts`, `TrainsPage.test.tsx`                             |
-| Settings, install, update prompts       | `SettingsPage.test.tsx`, `InstallPage.test.tsx`, `PwaContext` flows |
+| Scenario                                | Coverage                                                           |
+| --------------------------------------- | ------------------------------------------------------------------ |
+| Station selection and direction choice  | `src/app/App.test.tsx`, `src/pages/StationsPage.test.tsx`          |
+| Terminus auto-direction                 | `src/pages/StationsPage.test.tsx`, `src/pages/TrainsPage.test.tsx` |
+| Destination list ordering               | `src/domain/metro/travel.test.ts`                                  |
+| Destination selection                   | `src/pages/TrainsPage.test.tsx`, `src/app/App.test.tsx`            |
+| Destination reset on direction change   | `src/app/App.test.tsx`                                             |
+| Travel estimate and arrival calculation | `src/domain/metro/travel.test.ts`, `src/pages/TrainsPage.test.tsx` |
 
-## Device matrix
+## Settings, PWA, and support coverage
 
-| Device class            | Coverage                                                                  |
-| ----------------------- | ------------------------------------------------------------------------- |
-| iPhone / iOS Safari     | Manual install instructions, standalone detection, safe-area layout paths |
-| Android Chrome          | Prompt install flow, standalone mode, offline cache paths                 |
-| Desktop Chrome / Edge   | Manual install flow, update checks, keyboard navigation                   |
-| Narrow mobile viewport  | Bottom navigation and bottom sheet behavior verified by component tests   |
-| Offline / flaky network | PWA context handles offline update checks and cached app shell            |
+| Scenario                           | Coverage                                                         |
+| ---------------------------------- | ---------------------------------------------------------------- |
+| LocalStorage-backed seconds toggle | `src/pages/SettingsPage.test.tsx`                                |
+| Install flow actions               | `src/pages/InstallPage.test.tsx`                                 |
+| Support action wiring              | `src/pages/SettingsPage.test.tsx`, `src/lib/userActions.test.ts` |
+| GitHub Issues prefilled template   | `src/lib/userActions.test.ts`                                    |
+| PWA registration shim              | `src/test/setup.ts`                                              |
 
-## Findings fixed during stage
+## Manual coverage still required
 
-| Area                      | Fix                                                              |
-| ------------------------- | ---------------------------------------------------------------- |
-| Destination calculation   | Corrected destination ordering for both directions               |
-| Night schedule boundaries | Updated tests to match real post-midnight operating-day behavior |
-| PWA testability           | Added virtual module shim for `virtual:pwa-register/react`       |
-| Install flow typing       | Made install-method branches exhaustive                          |
-| UI state                  | Preserved destination and update flows across refresh checks     |
+- iPhone add-to-home-screen flow and safe-area behavior
+- Android install prompt and offline reopening
+- Desktop install prompt behavior
+- Real-device validation of live regions and focus handling
