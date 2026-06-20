@@ -43,12 +43,6 @@ export function getCurrentMetroTime(overrideDate?: Date): MetroTime {
   let h = parseInt(pHour, 10);
   if (h === 24) h = 0;
 
-  // Mathematical conversion for operations after midnight (up to 03:59)
-  let mathH = h;
-  if (h < 4) {
-    mathH += 24;
-  }
-
   return {
     dateString: `${year}-${month}-${day}`, // Note: this is the calendar date, which is fine for looking up special dates
     dayOfWeek,
@@ -56,7 +50,7 @@ export function getCurrentMetroTime(overrideDate?: Date): MetroTime {
     hours: h,
     minutes: parseInt(pMinute, 10),
     seconds: parseInt(pSecond, 10),
-    totalSeconds: mathH * 3600 + parseInt(pMinute, 10) * 60 + parseInt(pSecond, 10),
+    totalSeconds: h * 3600 + parseInt(pMinute, 10) * 60 + parseInt(pSecond, 10),
   };
 }
 

@@ -1,15 +1,17 @@
 import { schedule } from "../../data/schedule";
 import { specialDates } from "../../data/specialDates";
-import { timeStringToSeconds } from "../time";
 import type { MetroTime } from "../time";
-import type { DayType, StationId, DirectionId } from "./metro.types";
+import { timeStringToSeconds } from "../time";
+import type { DayType, DirectionId, StationId } from "./metro.types";
 
-export type TrainStatus = "waiting" | "approaching" | "arriving" | "not_found" | "error";
+export type TrainStatus = "waiting" | "approaching" | "arriving" | "error";
+export type UpcomingStatus = "ok" | "not_found" | "error";
+export type MetroRuntimeStatus = "running" | "before_open" | "after_close" | "error";
 
 export interface NearestTrain {
-  scheduleTime: string; // "18:27" or "24:10"
-  displayTime: string; // "18:27" or "00:10"
-  totalSeconds: number; // internal
+  scheduleTime: string;
+  displayTime: string;
+  totalSeconds: number;
   secondsLeft: number;
   status: TrainStatus;
   isLast: boolean;
@@ -19,9 +21,39 @@ export interface NearestTrain {
 export interface UpcomingTrains {
   nearest: NearestTrain | null;
   next: NearestTrain[];
-  status: "ok" | "not_found" | "error";
+  status: UpcomingStatus;
   dayType: DayType;
 }
+
+export interface MetroServiceState {
+  status: MetroRuntimeStatus;
+  dayType: DayType;
+  operationalDate: string;
+  isPreviousOperationalDay: boolean;
+  nearest: NearestTrain | null;
+  next: NearestTrain[];
+  firstTrain: NearestTrain | null;
+  lastTrain: NearestTrain | null;
+  secondsUntilFirstTrain: number | null;
+  message?: string;
+}
+
+interface ResolveMetroStateOptions {
+  currentSchedule: string[] | null;
+  currentDayType: DayType;
+  currentDate: string;
+  currentTime: MetroTime;
+  previousSchedule?: string[] | null;
+  previousDayType?: DayType;
+  previousDate?: string;
+  nextSchedule?: string[] | null;
+  nextDayType?: DayType;
+  nextDate?: string;
+}
+
+const ARRIVAL_WINDOW_SECONDS = 15;
+const APPROACHING_THRESHOLD_SECONDS = 30;
+const DAY_SECONDS = 24 * 60 * 60;
 
 export function getDayTypeForDate(dateString: string, isWeekend: boolean): DayType {
   const special = specialDates.find((d) => d.date === dateString);
@@ -46,12 +78,9 @@ export function getScheduleFor(
   return dirSchedule[key] || null;
 }
 
-const ARRIVAL_WINDOW_SECONDS = 15;
-const APPROACHING_THRESHOLD_SECONDS = 30;
-
 export function getUpcomingTrains(
   scheduleTimes: string[],
-  metroTime: MetroTime,
+  metroTime: Pick<MetroTime, "totalSeconds">,
 ): UpcomingTrains {
   if (!scheduleTimes || scheduleTimes.length === 0) {
     return { nearest: null, next: [], status: "error", dayType: "weekday" };
@@ -59,16 +88,13 @@ export function getUpcomingTrains(
 
   let nearestIdx = -1;
   let status: TrainStatus = "waiting";
-  let secondsLeft = 0;
 
   for (let i = 0; i < scheduleTimes.length; i++) {
     const tSec = timeStringToSeconds(scheduleTimes[i]!);
     const diff = tSec - metroTime.totalSeconds;
 
-    // Arriving state: time hasn't passed more than 15 seconds
     if (diff > -ARRIVAL_WINDOW_SECONDS) {
       nearestIdx = i;
-      secondsLeft = diff;
 
       if (diff <= 0 && diff > -ARRIVAL_WINDOW_SECONDS) {
         status = "arriving";
@@ -85,36 +111,224 @@ export function getUpcomingTrains(
     return { nearest: null, next: [], status: "not_found", dayType: "weekday" };
   }
 
-  const parseDisplayTime = (timeStr: string) => {
-    const [hStr, mStr] = timeStr.split(":");
-    const dH = parseInt(hStr!, 10) % 24;
-    return `${String(dH).padStart(2, "0")}:${mStr}`;
-  };
+  const nearest = buildTrain(scheduleTimes, nearestIdx, metroTime.totalSeconds, status);
+  const next: NearestTrain[] = [];
 
-  const nearestTimeStr = scheduleTimes[nearestIdx]!;
-  const nearest: NearestTrain = {
-    scheduleTime: nearestTimeStr,
-    displayTime: parseDisplayTime(nearestTimeStr),
-    totalSeconds: timeStringToSeconds(nearestTimeStr),
-    secondsLeft,
-    status,
-    isLast: nearestIdx === scheduleTimes.length - 1,
-    originalIndex: nearestIdx,
-  };
-
-  const nextTrains: NearestTrain[] = [];
   for (let i = nearestIdx + 1; i < nearestIdx + 5 && i < scheduleTimes.length; i++) {
-    const tStr = scheduleTimes[i]!;
-    nextTrains.push({
-      scheduleTime: tStr,
-      displayTime: parseDisplayTime(tStr),
-      totalSeconds: timeStringToSeconds(tStr),
-      secondsLeft: timeStringToSeconds(tStr) - metroTime.totalSeconds,
-      status: "waiting",
-      isLast: i === scheduleTimes.length - 1,
-      originalIndex: i,
-    });
+    next.push(buildTrain(scheduleTimes, i, metroTime.totalSeconds));
   }
 
-  return { nearest, next: nextTrains, status: "ok", dayType: "weekday" }; // dayType will be set later by caller
+  return { nearest, next, status: "ok", dayType: "weekday" };
+}
+
+export function resolveMetroState(
+  stationId: StationId,
+  directionId: DirectionId,
+  metroTime: MetroTime,
+): MetroServiceState {
+  const currentDate = metroTime.dateString;
+  const previousDate = shiftDateString(currentDate, -1);
+  const nextDate = shiftDateString(currentDate, 1);
+
+  const currentDayType = getDayTypeForDate(currentDate, isWeekendDate(currentDate));
+  const previousDayType = getDayTypeForDate(previousDate, isWeekendDate(previousDate));
+  const nextDayType = getDayTypeForDate(nextDate, isWeekendDate(nextDate));
+
+  return resolveMetroStateFromSchedules({
+    currentSchedule: getScheduleFor(stationId, directionId, currentDayType),
+    currentDayType,
+    currentDate,
+    currentTime: metroTime,
+    previousSchedule: getScheduleFor(stationId, directionId, previousDayType),
+    previousDayType,
+    previousDate,
+    nextSchedule: getScheduleFor(stationId, directionId, nextDayType),
+    nextDayType,
+    nextDate,
+  });
+}
+
+export function resolveMetroStateFromSchedules(
+  options: ResolveMetroStateOptions,
+): MetroServiceState {
+  const {
+    currentSchedule,
+    currentDayType,
+    currentDate,
+    currentTime,
+    previousSchedule = null,
+    previousDayType = currentDayType,
+    previousDate = shiftDateString(currentDate, -1),
+    nextSchedule = null,
+    nextDayType = currentDayType,
+    nextDate = shiftDateString(currentDate, 1),
+  } = options;
+
+  if (!currentSchedule || currentSchedule.length === 0) {
+    return buildErrorState(
+      currentDate,
+      currentDayType,
+      "Расписание для выбранного направления не найдено.",
+    );
+  }
+
+  const currentFirstSeconds = timeStringToSeconds(currentSchedule[0]!);
+
+  if (previousSchedule && previousSchedule.length > 0) {
+    const previousLastSeconds = timeStringToSeconds(
+      previousSchedule[previousSchedule.length - 1]!,
+    );
+
+    if (previousLastSeconds >= DAY_SECONDS) {
+      const transitionEndSeconds =
+        previousLastSeconds + ARRIVAL_WINDOW_SECONDS - DAY_SECONDS;
+
+      if (currentTime.totalSeconds <= transitionEndSeconds) {
+        const previousUpcoming = getUpcomingTrains(previousSchedule, {
+          totalSeconds: currentTime.totalSeconds + DAY_SECONDS,
+        });
+
+        if (previousUpcoming.status === "ok") {
+          return {
+            status: "running",
+            dayType: previousDayType,
+            operationalDate: previousDate,
+            isPreviousOperationalDay: true,
+            nearest: previousUpcoming.nearest,
+            next: previousUpcoming.next,
+            firstTrain: buildTrain(
+              previousSchedule,
+              0,
+              currentTime.totalSeconds + DAY_SECONDS,
+            ),
+            lastTrain: buildTrain(
+              previousSchedule,
+              previousSchedule.length - 1,
+              currentTime.totalSeconds + DAY_SECONDS,
+            ),
+            secondsUntilFirstTrain: null,
+          };
+        }
+      }
+    }
+  }
+
+  if (currentTime.totalSeconds < currentFirstSeconds) {
+    return {
+      status: "before_open",
+      dayType: currentDayType,
+      operationalDate: currentDate,
+      isPreviousOperationalDay: false,
+      nearest: null,
+      next: [],
+      firstTrain: buildTrain(currentSchedule, 0, currentTime.totalSeconds),
+      lastTrain: buildTrain(
+        currentSchedule,
+        currentSchedule.length - 1,
+        currentTime.totalSeconds,
+      ),
+      secondsUntilFirstTrain: currentFirstSeconds - currentTime.totalSeconds,
+    };
+  }
+
+  const currentUpcoming = getUpcomingTrains(currentSchedule, currentTime);
+  if (currentUpcoming.status === "ok") {
+    return {
+      status: "running",
+      dayType: currentDayType,
+      operationalDate: currentDate,
+      isPreviousOperationalDay: false,
+      nearest: currentUpcoming.nearest,
+      next: currentUpcoming.next,
+      firstTrain: buildTrain(currentSchedule, 0, currentTime.totalSeconds),
+      lastTrain: buildTrain(
+        currentSchedule,
+        currentSchedule.length - 1,
+        currentTime.totalSeconds,
+      ),
+      secondsUntilFirstTrain: null,
+    };
+  }
+
+  if (!nextSchedule || nextSchedule.length === 0) {
+    return buildErrorState(
+      currentDate,
+      currentDayType,
+      "Не удалось определить первый поезд следующего дня.",
+    );
+  }
+
+  const nextFirstSeconds = timeStringToSeconds(nextSchedule[0]!);
+
+  return {
+    status: "after_close",
+    dayType: nextDayType,
+    operationalDate: nextDate,
+    isPreviousOperationalDay: false,
+    nearest: null,
+    next: [],
+    firstTrain: buildTrain(nextSchedule, 0, -DAY_SECONDS + currentTime.totalSeconds),
+    lastTrain: buildTrain(
+      currentSchedule,
+      currentSchedule.length - 1,
+      currentTime.totalSeconds,
+    ),
+    secondsUntilFirstTrain: DAY_SECONDS - currentTime.totalSeconds + nextFirstSeconds,
+  };
+}
+
+function buildTrain(
+  scheduleTimes: string[],
+  index: number,
+  nowSeconds: number,
+  status: TrainStatus = "waiting",
+): NearestTrain {
+  const scheduleTime = scheduleTimes[index]!;
+  const totalSeconds = timeStringToSeconds(scheduleTime);
+
+  return {
+    scheduleTime,
+    displayTime: toDisplayTime(scheduleTime),
+    totalSeconds,
+    secondsLeft: totalSeconds - nowSeconds,
+    status,
+    isLast: index === scheduleTimes.length - 1,
+    originalIndex: index,
+  };
+}
+
+function toDisplayTime(timeStr: string): string {
+  const [hours, minutes] = timeStr.split(":");
+  return `${String(Number(hours) % 24).padStart(2, "0")}:${minutes!}`;
+}
+
+function buildErrorState(
+  operationalDate: string,
+  dayType: DayType,
+  message: string,
+): MetroServiceState {
+  return {
+    status: "error",
+    dayType,
+    operationalDate,
+    isPreviousOperationalDay: false,
+    nearest: null,
+    next: [],
+    firstTrain: null,
+    lastTrain: null,
+    secondsUntilFirstTrain: null,
+    message,
+  };
+}
+
+function shiftDateString(dateString: string, days: number): string {
+  const date = new Date(`${dateString}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function isWeekendDate(dateString: string): boolean {
+  const date = new Date(`${dateString}T00:00:00Z`);
+  const dayOfWeek = date.getUTCDay();
+  return dayOfWeek === 0 || dayOfWeek === 6;
 }

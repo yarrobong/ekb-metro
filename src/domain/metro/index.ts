@@ -41,3 +41,4 @@ export function getNextStation(
 
 export * from "./metro.types";
 export * from "./schedule.service";
+export * from "./travel.service";

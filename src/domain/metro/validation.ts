@@ -47,7 +47,11 @@ export const ScheduleSchema = z.object({
 export const DriveTimeSchema = z.object({
   from: StationIdSchema,
   to: StationIdSchema,
+  directionId: DirectionIdSchema,
   timeSeconds: z.number().int().positive(),
+  includesStopTime: z.boolean(),
+  isApproximate: z.boolean(),
+  source: z.string().min(1),
 });
 
 export const SpecialDateSchema = z.object({

@@ -31,6 +31,8 @@ const navigationItems: NavigationItem[] = [
 export function BottomNavigation() {
   const activeScreen = useAppStore((state) => state.screen);
   const setScreen = useAppStore((state) => state.setScreen);
+  const activeRootScreen =
+    activeScreen === "about" || activeScreen === "install" ? "settings" : activeScreen;
 
   return (
     <nav
@@ -40,7 +42,7 @@ export function BottomNavigation() {
       <div className="mx-auto grid max-w-[520px] grid-cols-3 px-2">
         {navigationItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeScreen === item.screen;
+          const isActive = activeRootScreen === item.screen;
 
           return (
             <button

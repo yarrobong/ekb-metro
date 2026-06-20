@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { formatMinutes, formatHours, formatRelativeTime, formatTimer } from "./formatting";
+import {
+  formatMinutes,
+  formatHours,
+  formatRelativeTime,
+  formatTimer,
+} from "./formatting";
 import { timeStringToSeconds } from "./time.service";
 
 describe("Time Formatting", () => {

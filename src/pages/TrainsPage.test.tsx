@@ -1,8 +1,29 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 import { useAppStore } from "../app/store";
 import { TrainsPage } from "./TrainsPage";
+
+vi.mock("../app/hooks/useLiveMetroTime", () => ({
+  useLiveMetroTime: () => ({
+    dateString: "2024-01-05",
+    dayOfWeek: 5,
+    isWeekend: false,
+    hours: 18,
+    minutes: 24,
+    seconds: 0,
+    totalSeconds: 18 * 3600 + 24 * 60,
+  }),
+}));
+
+vi.mock("../app/usePwa", () => ({
+  usePwa: () => ({
+    installMethod: "manual",
+    shouldShowInstallPrompt: false,
+    dismissInstallPrompt: vi.fn(),
+    openInstallPrompt: vi.fn(),
+  }),
+}));
 
 describe("TrainsPage component", () => {
   beforeEach(() => {
@@ -12,6 +33,8 @@ describe("TrainsPage component", () => {
       selectedDirectionId: null,
       selectedDestinationId: null,
       isDirectionModalOpen: false,
+      isDestinationSheetOpen: false,
+      activeToast: null,
     });
   });
 
@@ -57,5 +80,28 @@ describe("TrainsPage component", () => {
     expect(screen.getByText("Ботаническая")).toBeInTheDocument();
     // Only one direction, verify it shows the direction text.
     expect(screen.getByText(/В сторону Проспекта Космонавтов/i)).toBeInTheDocument();
+  });
+
+  it("lets the user pick a destination and shows the trip estimate", () => {
+    useAppStore.setState({
+      selectedStationId: "geologicheskaya",
+      selectedDirectionId: "to-botanicheskaya",
+    });
+
+    render(<TrainsPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Выбрать станцию/i }));
+
+    expect(screen.getByText("Выберите станцию назначения")).toBeInTheDocument();
+    expect(screen.getAllByText("Чкаловская").length).toBeGreaterThan(0);
+    expect(screen.getByText("Ботаническая")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Ботаническая/i }));
+
+    expect(screen.getByText("Станция назначения")).toBeInTheDocument();
+    expect(screen.getByText("Ботаническая")).toBeInTheDocument();
+    expect(screen.getByText("2 станции")).toBeInTheDocument();
+    expect(screen.getByText("Примерно 6 минут в пути")).toBeInTheDocument();
+    expect(screen.getByText("Ориентировочное прибытие")).toBeInTheDocument();
   });
 });

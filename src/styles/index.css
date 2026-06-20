@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  --color-app-bg: #0f172a;
-  --color-surface: rgba(15, 23, 42, 0.5);
-  --color-surface-raised: #1e293b;
-  --color-surface-hover: rgba(30, 41, 59, 0.5);
+  --color-app-bg: #0b0e12;
+  --color-surface: rgba(11, 14, 18, 0.78);
+  --color-surface-raised: #151a21;
+  --color-surface-hover: rgba(36, 44, 54, 0.5);
 
   --color-text-primary: #e2e8f0;
   --color-text-secondary: #94a3b8;
@@ -40,7 +40,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  background: #0f172a;
+  background: #0b0e12;
   color: #e2e8f0;
 }
 
@@ -53,7 +53,7 @@
 html {
   min-width: 320px;
   min-height: 100%;
-  background: #0f172a;
+  background: #0b0e12;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -62,7 +62,7 @@ body {
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
-  background: radial-gradient(circle at top right, #020617, #0f172a, #0f172a);
+  background: radial-gradient(circle at top right, #131922, #0b0e12 48%, #0b0e12);
 }
 
 button,

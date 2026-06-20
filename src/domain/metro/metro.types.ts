@@ -43,7 +43,11 @@ export type FullSchedule = Record<StationId, Partial<StationSchedule>>;
 export interface DriveTime {
   from: StationId;
   to: StationId;
+  directionId: DirectionId;
   timeSeconds: number;
+  includesStopTime: boolean;
+  isApproximate: boolean;
+  source: string;
 }
 
 export interface SpecialDate {

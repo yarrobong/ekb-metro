@@ -1,8 +1,20 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "./App";
 import { useAppStore } from "./store";
+
+vi.mock("./hooks/useLiveMetroTime", () => ({
+  useLiveMetroTime: () => ({
+    dateString: "2024-01-05",
+    dayOfWeek: 5,
+    isWeekend: false,
+    hours: 18,
+    minutes: 24,
+    seconds: 0,
+    totalSeconds: 18 * 3600 + 24 * 60,
+  }),
+}));
 
 describe("App", () => {
   beforeEach(() => {
@@ -12,6 +24,8 @@ describe("App", () => {
       selectedDirectionId: null,
       selectedDestinationId: null,
       isDirectionModalOpen: false,
+      isDestinationSheetOpen: false,
+      activeToast: null,
     });
   });
 
@@ -36,6 +50,10 @@ describe("App", () => {
     // Go to About
     await user.click(screen.getByText("О приложении", { selector: "button *" }));
     expect(await screen.findByText("Метро Екатеринбурга")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Настройки" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
 
     // Go to Stations
     await user.click(screen.getByText("Станции"));
@@ -75,5 +93,22 @@ describe("App", () => {
     expect(await screen.findByText("Следующий поезд")).toBeInTheDocument();
     expect(screen.getByText("Чкаловская")).toBeInTheDocument();
     expect(screen.queryByText("В сторону Проспекта Космонавтов")).toBeInTheDocument();
+  });
+
+  it("selects destination and resets it after changing direction", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByText("Геологическая"));
+    await user.click(await screen.findByText("В сторону Ботанической"));
+
+    await user.click(await screen.findByRole("button", { name: /Выбрать станцию/i }));
+    await user.click(await screen.findByRole("button", { name: /Ботаническая/i }));
+
+    expect(await screen.findByText("2 станции")).toBeInTheDocument();
+
+    await user.click(screen.getByText("К Пр. Космонавтов"));
+
+    expect(screen.getByRole("button", { name: /Выбрать станцию/i })).toBeInTheDocument();
   });
 });

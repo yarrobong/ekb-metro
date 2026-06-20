@@ -3,6 +3,11 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      "virtual:pwa-register/react": "/src/test/mocks/pwa-register-react.ts",
+    },
+  },
 
   test: {
     environment: "jsdom",

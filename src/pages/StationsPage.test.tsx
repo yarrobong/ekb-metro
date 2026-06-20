@@ -6,8 +6,6 @@ import { useAppStore } from "../app/store";
 import { StationsPage } from "./StationsPage";
 
 describe("StationsPage component", () => {
-  const user = userEvent.setup();
-
   beforeEach(() => {
     useAppStore.setState({
       screen: "stations",
@@ -15,6 +13,8 @@ describe("StationsPage component", () => {
       selectedDirectionId: null,
       selectedDestinationId: null,
       isDirectionModalOpen: false,
+      isDestinationSheetOpen: false,
+      activeToast: null,
     });
   });
 
@@ -28,6 +28,7 @@ describe("StationsPage component", () => {
   });
 
   it("opens DirectionModal when an intermediate station is clicked", async () => {
+    const user = userEvent.setup();
     render(<StationsPage />);
 
     const geolochicheskaya = screen.getByText("Геологическая");
@@ -41,6 +42,7 @@ describe("StationsPage component", () => {
   });
 
   it("handles direction selection correctly inside Modal", async () => {
+    const user = userEvent.setup();
     render(<StationsPage />);
 
     // Select intermediate station
@@ -64,6 +66,7 @@ describe("StationsPage component", () => {
   });
 
   it("handles terminus station Selection automatically without Modal", async () => {
+    const user = userEvent.setup();
     render(<StationsPage />);
 
     const kosmonavtov = screen.getByText("Проспект Космонавтов");
