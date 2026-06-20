@@ -15,6 +15,7 @@ import { Card } from "../components/ui/Card";
 import { PageHeader } from "../components/ui/PageHeader";
 import { BottomSheet } from "../components/ui/BottomSheet";
 import { DestinationSelectorSheet } from "../components/metro/DestinationSelectorSheet";
+import { RouteProgressCard } from "../components/metro/RouteProgressCard";
 import { useAppStore } from "../app/store";
 import { usePwa } from "../app/usePwa";
 import { getStationById, getDirectionById, getNextStation } from "../domain/metro";
@@ -22,13 +23,7 @@ import { cn } from "../lib/cn";
 import { useLiveMetroTime } from "../app/hooks/useLiveMetroTime";
 import { resolveMetroState } from "../domain/metro/schedule.service";
 import { formatRelativeTime, formatTimer } from "../domain/time";
-import { metadata } from "../data/metadata";
-import {
-  buildTravelEstimate,
-  formatApproximateTravelTime,
-  formatStationCount,
-  getDestinationOptions,
-} from "../domain/metro";
+import { buildTravelEstimate, getDestinationOptions } from "../domain/metro";
 import { reportIssue } from "../lib/userActions";
 
 function formatDateRussian(dateStr: string) {
@@ -41,6 +36,30 @@ function formatDateRussian(dateStr: string) {
   } catch {
     return dateStr;
   }
+}
+
+function shiftDateString(dateString: string, days: number) {
+  const date = new Date(`${dateString}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function getTrainCalendarDate(operationalDate: string, scheduleTime: string) {
+  const [hours] = scheduleTime.split(":");
+  const dayOffset = Math.floor(Number(hours) / 24);
+  return shiftDateString(operationalDate, dayOffset);
+}
+
+function getRelativeDateLabel(targetDate: string, referenceDate: string) {
+  if (targetDate === referenceDate) {
+    return "сегодня";
+  }
+
+  if (targetDate === shiftDateString(referenceDate, 1)) {
+    return "завтра";
+  }
+
+  return formatDateRussian(targetDate);
 }
 
 export function TrainsPage() {
@@ -147,6 +166,19 @@ export function TrainsPage() {
     return null;
   }
 
+  const firstTrainCalendarDate = metroState.firstTrain
+    ? getTrainCalendarDate(metroState.operationalDate, metroState.firstTrain.scheduleTime)
+    : null;
+  const firstTrainRelativeDate = firstTrainCalendarDate
+    ? getRelativeDateLabel(firstTrainCalendarDate, metroTime.dateString)
+    : null;
+  const beforeOpenDateLabel =
+    firstTrainCalendarDate === metroTime.dateString
+      ? "Первый поезд сегодня"
+      : firstTrainCalendarDate
+        ? `Первый поезд ${formatDateRussian(firstTrainCalendarDate)}`
+        : "Первый поезд";
+
   const handleCloseDestinationSheet = () => {
     closeDestinationSheet();
     window.requestAnimationFrame(() => {
@@ -184,6 +216,8 @@ export function TrainsPage() {
             return (
               <button
                 key={dirId}
+                type="button"
+                aria-pressed={isActive}
                 onClick={() => selectDirection(dirId)}
                 className={cn(
                   "focus-ring relative flex-1 py-2.5 text-sm font-medium rounded-lg transition-all",
@@ -250,26 +284,84 @@ export function TrainsPage() {
           </Button>
         </Card>
       ) : metroState?.status === "before_open" || metroState?.status === "after_close" ? (
-        <Card className="text-center py-8">
-          <p className="text-sm font-medium text-text-secondary mb-4 uppercase tracking-wider">
-            {metroState.status === "before_open" ? "Метро пока закрыто" : "Метро закрыто"}
-          </p>
+        <Card className="overflow-hidden border-border/80 bg-linear-to-b from-surface-raised via-surface-raised to-surface py-8">
+          <div className="text-center">
+            <p className="text-sm font-medium text-text-secondary mb-4 uppercase tracking-wider">
+              {metroState.status === "before_open"
+                ? "Метро пока закрыто"
+                : "Метро закрыто"}
+            </p>
 
-          <div className="tabular-nums text-6xl sm:text-7xl font-bold tracking-tight mb-4 text-text-primary">
-            {formatTimer(metroState.secondsUntilFirstTrain ?? 0, showSeconds)}
+            <div className="tabular-nums text-6xl sm:text-7xl font-bold tracking-tight mb-4 text-text-primary">
+              {formatTimer(metroState.secondsUntilFirstTrain ?? 0, showSeconds)}
+            </div>
+
+            <p className="text-lg font-medium text-text-primary">
+              {metroState.status === "before_open"
+                ? "До первого поезда"
+                : "До первого поезда следующего дня"}
+            </p>
+
+            {metroState.status === "after_close" && (
+              <p className="mt-3 text-sm text-text-secondary">
+                Поездов по этому направлению больше нет
+              </p>
+            )}
           </div>
 
-          <p className="text-lg font-medium text-text-primary">
-            {metroState.status === "before_open"
-              ? `Первый поезд в ${metroState.firstTrain?.displayTime}`
-              : `Следующее открытие в ${metroState.firstTrain?.displayTime}`}
-          </p>
+          <div className="mt-6 rounded-2xl border border-white/8 bg-black/10 p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-text-secondary">
+                  {metroState.status === "before_open"
+                    ? beforeOpenDateLabel
+                    : "Первый поезд следующего операционного дня"}
+                </p>
+                <div className="mt-3 flex items-end gap-3">
+                  <p className="text-3xl font-bold tabular-nums text-text-primary">
+                    {metroState.firstTrain?.displayTime}
+                  </p>
+                  {firstTrainRelativeDate && (
+                    <span className="rounded-full bg-accent/12 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-accent">
+                      {firstTrainRelativeDate}
+                    </span>
+                  )}
+                </div>
+              </div>
 
-          <p className="mt-3 text-sm text-text-secondary">
-            {metroState.status === "before_open"
-              ? "Движение начнётся с первым поездом текущего операционного дня."
-              : "Движение завершено. Покажем первый поезд следующего операционного дня."}
-          </p>
+              <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-right">
+                <p className="text-xs uppercase tracking-wide text-text-secondary">
+                  Направление
+                </p>
+                <p className="mt-2 max-w-44 text-sm font-medium leading-5 text-text-primary">
+                  {direction?.name}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl bg-surface px-4 py-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">
+                  Точное время
+                </p>
+                <p className="mt-2 text-lg font-semibold tabular-nums text-text-primary">
+                  {metroState.firstTrain?.displayTime}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-surface px-4 py-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">
+                  Время до отправления
+                </p>
+                <p className="mt-2 text-lg font-semibold text-text-primary">
+                  {formatRelativeTime(
+                    metroState.secondsUntilFirstTrain ?? 0,
+                    showSeconds,
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
         </Card>
       ) : metroState?.nearest ? (
         <Card
@@ -288,7 +380,7 @@ export function TrainsPage() {
 
           <div className="tabular-nums text-6xl sm:text-7xl font-bold tracking-tight mb-4 text-text-primary">
             {metroState.nearest.status === "arriving" ? (
-              <span className="text-5xl sm:text-6xl text-accent animate-pulse">
+              <span className="text-5xl sm:text-6xl text-accent motion-safe:animate-pulse">
                 Поезд прибывает
               </span>
             ) : metroState.nearest.status === "approaching" && !showSeconds ? (
@@ -301,7 +393,8 @@ export function TrainsPage() {
           <p
             className={cn(
               "text-lg font-medium",
-              metroState.nearest.status === "approaching" && "text-accent animate-pulse",
+              metroState.nearest.status === "approaching" &&
+                "text-accent motion-safe:animate-pulse",
               metroState.nearest.status === "arriving" && "text-accent",
             )}
           >
@@ -312,10 +405,26 @@ export function TrainsPage() {
                 : `Прибытие в ${metroState.nearest.displayTime}`}
           </p>
 
-          {metroState.nearest.isLast && (
-            <p className="mt-2 text-sm font-medium text-warning bg-warning/10 inline-block px-3 py-1 rounded-full">
-              Последний поезд
+          {metroState.nearest.status !== "waiting" && (
+            <p className="mt-2 text-sm text-text-secondary">
+              Точное время: {metroState.nearest.displayTime}
             </p>
+          )}
+
+          {metroState.nearest.isLastTrain && (
+            <div className="mx-auto mt-4 max-w-md rounded-2xl border border-warning/35 bg-warning/10 px-4 py-3">
+              <p className="flex items-center justify-center gap-2 text-sm font-semibold text-text-primary">
+                <TrainFront
+                  size={16}
+                  className="shrink-0 text-warning"
+                  aria-hidden="true"
+                />
+                Последний поезд
+              </p>
+              <p className="mt-1 text-sm leading-5 text-text-secondary">
+                После него поездов по этому направлению сегодня больше не будет
+              </p>
+            </div>
           )}
         </Card>
       ) : null}
@@ -330,19 +439,19 @@ export function TrainsPage() {
             {metroState.next.map((train) => (
               <li
                 key={train.scheduleTime}
-                className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-surface-hover transition-colors"
+                className="grid grid-cols-[minmax(0,max-content)_minmax(0,1fr)] items-center gap-x-4 gap-y-1 rounded-lg px-2 py-2 sm:gap-x-6"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                   <span className="text-lg font-medium tabular-nums text-text-primary">
                     {train.displayTime}
                   </span>
-                  {train.isLast && (
-                    <span className="text-xs font-medium text-warning bg-warning/10 px-2 py-0.5 rounded">
+                  {train.isLastTrain && (
+                    <span className="shrink-0 rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
                       последний
                     </span>
                   )}
                 </div>
-                <span className="text-sm font-medium text-text-secondary tabular-nums">
+                <span className="min-w-0 text-right text-sm font-medium text-text-secondary">
                   через {formatRelativeTime(train.secondsLeft, showSeconds)}
                 </span>
               </li>
@@ -420,25 +529,20 @@ export function TrainsPage() {
           )
         ) : (
           <div className="mt-5 space-y-4">
+            <RouteProgressCard
+              currentStation={station!}
+              destinationStation={travelEstimate.destination}
+              routeStations={travelEstimate.routeStations}
+              stationCount={travelEstimate.stationCount}
+              travelSeconds={travelEstimate.travelSeconds}
+            />
+
             <div className="rounded-2xl border border-border bg-surface-raised p-4">
               <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm text-text-secondary">Станция назначения</p>
-                  <p className="mt-2 text-2xl font-bold text-text-primary">
-                    {travelEstimate.destination.name}
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-text-primary">
-                    {formatStationCount(travelEstimate.stationCount)}
-                  </p>
-                  <p className="mt-1 text-sm text-text-secondary">
-                    {formatApproximateTravelTime(travelEstimate.travelSeconds)}
-                  </p>
-                </div>
-
                 <Button
                   ref={destinationTriggerRef}
                   variant="ghost"
-                  className="shrink-0"
+                  className="ml-auto shrink-0"
                   onClick={openDestinationSheet}
                 >
                   Изменить
@@ -522,18 +626,9 @@ export function TrainsPage() {
         </Card>
       )}
 
-      {/* Footer Info */}
       <div className="text-center space-y-2 mt-8 opacity-60">
         <p className="text-xs font-medium text-text-primary bg-surface-raised inline-block px-3 py-1.5 rounded-lg mb-2">
           {metroState.dayType === "weekend" ? "Выходной день" : "Рабочий день"}
-        </p>
-        {metroState.isPreviousOperationalDay && (
-          <p className="text-xs text-text-secondary">
-            После полуночи показывается поезд предыдущего операционного дня.
-          </p>
-        )}
-        <p className="text-xs text-text-secondary">
-          Расписание обновлено {formatDateRussian(metadata.checkedAt)}
         </p>
         <p className="text-[11px] leading-relaxed text-text-secondary max-w-xs mx-auto">
           Время рассчитано по расписанию. Фактическое движение поездов может отличаться.

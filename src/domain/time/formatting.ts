@@ -70,36 +70,19 @@ export function formatTimer(secondsDiff: number, showSeconds: boolean): string {
 }
 
 export function formatRelativeTime(secondsDiff: number, showSeconds: boolean): string {
-  if (secondsDiff < 0) return "0 минут";
+  void showSeconds;
+  const safeSeconds = Math.max(0, secondsDiff);
+  const m = Math.ceil(safeSeconds / 60);
 
-  if (!showSeconds) {
-    const m = Math.ceil(secondsDiff / 60);
-    if (m === 0) return "меньше минуты";
-
-    const h = Math.floor(m / 60);
-    const mins = m % 60;
-
-    if (h > 0) {
-      if (mins === 0) return formatHours(h);
-      return `${formatHours(h)} ${formatMinutes(mins)}`;
-    }
-    return formatMinutes(mins);
-  }
-
-  // When showSeconds is true, relative time should be something like "4 минуты" or maybe we still write "3 мин 42 сек"?
-  // Wait, the prompt:
-  // "Следующие поезда: 18:31 — через 7 минут, 18:35 — через 11 минут"
-  // Wait, does it say relative time should have seconds? No, "Если секунды в строках не показываются..."
-  // It says "Настройка отображения секунд. Более часа 1:03:42 ... Секунды выключены 4 минуты ... "
-  // It's probably better to just return the same text for relative trains as for unshown seconds (just rounded) if it's not the main timer.
-  // Wait, we can reuse `formatTimer` for relative time for simplicity? No, `через 4 минуты` needs "4 минуты". What if it's showing seconds? "через 1:03:42"? The screenshot has "через 7 минут", doesn't matter if seconds are on or not.
-  const m = Math.ceil(secondsDiff / 60);
   if (m === 0) return "меньше минуты";
+
   const h = Math.floor(m / 60);
   const mins = m % 60;
+
   if (h > 0) {
     if (mins === 0) return formatHours(h);
     return `${formatHours(h)} ${formatMinutes(mins)}`;
   }
+
   return formatMinutes(mins);
 }

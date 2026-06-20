@@ -33,6 +33,13 @@ describe("Time Formatting", () => {
     expect(formatRelativeTime(3600, false)).toBe("1 час");
   });
 
+  it("clamps negative relative time and keeps Russian declensions", () => {
+    expect(formatRelativeTime(-5, false)).toBe("меньше минуты");
+    expect(formatRelativeTime(21 * 60, false)).toBe("21 минута");
+    expect(formatRelativeTime(22 * 60, false)).toBe("22 минуты");
+    expect(formatRelativeTime(25 * 60, false)).toBe("25 минут");
+  });
+
   it("formats timer display (showSeconds = true)", () => {
     expect(formatTimer(45, true)).toBe("00:45");
     expect(formatTimer(65, true)).toBe("01:05");
