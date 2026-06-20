@@ -2,7 +2,7 @@
 
 ## Goal
 
-`ebk-metro` is a fully static client-side PWA for estimated Yekaterinburg Metro arrivals and trip calculations. There is no backend, database, or runtime API.
+`ekb-metro` is a fully static client-side PWA for estimated Yekaterinburg Metro arrivals and trip calculations. There is no backend, database, or runtime API.
 
 ## Main layers
 
@@ -28,7 +28,7 @@
 
 ## PWA
 
-- Vite production base is `/ebk-metro/`.
+- Vite production base is `/ekb-metro/`.
 - `vite-plugin-pwa` generates the manifest and service worker.
 - Offline readiness and update prompts are handled in `src/app/PwaContext.tsx`.
 - Updates must not reload the app automatically without user action.

@@ -7,7 +7,7 @@ import { extname, join, normalize, resolve } from "node:path";
 const HOST = "127.0.0.1";
 const PORT = 4173;
 const DIST_DIR = resolve("dist");
-const SITE_BASE_PATH = "/ebk-metro/";
+const SITE_BASE_PATH = "/ekb-metro/";
 
 const contentTypes: Record<string, string> = {
   ".css": "text/css; charset=utf-8",

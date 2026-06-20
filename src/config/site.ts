@@ -1,1 +1,1 @@
-export const SITE_BASE_PATH = "/ebk-metro/";
+export const SITE_BASE_PATH = "/ekb-metro/";

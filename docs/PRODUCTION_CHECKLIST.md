@@ -12,10 +12,10 @@
 ## Build artifact
 
 - `npm run build` succeeds
-- Vite production base is `/ebk-metro/`
+- Vite production base is `/ekb-metro/`
 - `dist/manifest.webmanifest` is generated
 - `dist/sw.js` and Workbox assets are generated
-- `public/404.html` redirects to `/ebk-metro/`
+- `public/404.html` redirects to `/ekb-metro/`
 
 ## Functional checks
 

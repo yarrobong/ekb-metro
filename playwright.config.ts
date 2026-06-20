@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const previewOrigin = "http://127.0.0.1:4173";
-const basePath = "/ebk-metro/";
+const basePath = "/ekb-metro/";
 const baseURL = new URL(basePath.slice(1), `${previewOrigin}/`).toString();
 
 export default defineConfig({
