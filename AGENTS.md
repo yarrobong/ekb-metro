@@ -21,7 +21,7 @@ Run these checks before finishing substantial changes:
 
 ## Data And Time Rules
 
-- Production base path is `/ebk-metro/`.
+- Production base path is `/ekb-metro/`.
 - All metro time calculations must use `Asia/Yekaterinburg`.
 - Schedule data lives in `src/data/*`; do not invent train times or replace real data with mocks.
 - Any schedule change must preserve validation integrity and be checked with tests.

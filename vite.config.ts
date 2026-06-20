@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ command }) => {
-  const base = command === "build" ? "/ebk-metro/" : "/";
+  const base = command === "build" ? "/ekb-metro/" : "/";
 
   return {
     base,

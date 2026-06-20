@@ -3,7 +3,7 @@
 Неофициальное статическое PWA-приложение с расчётным временем прибытия поездов Екатеринбургского метрополитена. Приложение помогает выбрать станцию и направление, увидеть ближайший поезд, следующие рейсы и оценить время поездки до станции назначения.
 
 Предполагаемый production URL для GitHub Pages:
-`https://yarrobong.github.io/ebk-metro/`
+`https://yarrobong.github.io/ekb-metro/`
 
 ## Статус
 
@@ -59,7 +59,7 @@ npm run build
 npm run preview
 ```
 
-Production base path для сборки: `/ebk-metro/`.
+Production base path для сборки: `/ekb-metro/`.
 
 ## Что умеет приложение
 
@@ -115,6 +115,6 @@ docs           эксплуатационная документация
 ## Обратная связь
 
 Основной канал сообщений об ошибках:
-[GitHub Issues](https://github.com/yarrobong/ebk-metro/issues)
+[GitHub Issues](https://github.com/yarrobong/ekb-metro/issues)
 
 Приложение подготавливает текст issue с контекстом маршрута, временем Екатеринбурга, версией приложения и версией расписания, но без персональных данных, IP и геолокации.
