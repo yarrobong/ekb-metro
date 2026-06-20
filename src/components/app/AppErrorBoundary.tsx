@@ -97,7 +97,7 @@ export class AppErrorBoundary extends Component<
           </div>
 
           <p className="mt-5 text-xs text-text-secondary">
-            Код проблемы: {this.state.errorCode} · Версия {metadata.version}
+            Код проблемы: {this.state.errorCode} · Версия {metadata.appVersion}
           </p>
         </Card>
       </div>

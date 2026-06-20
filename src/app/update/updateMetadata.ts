@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import packageJson from "../../../package.json";
 import { metadata as metroMetadata } from "../../data/metadata";
 
 export const updateTypeSchema = z.enum([
@@ -28,8 +27,8 @@ export interface AvailableUpdateDetails {
 }
 
 export const currentUpdateMetadata: UpdateMetadata = updateMetadataSchema.parse({
-  appVersion: packageJson.version,
-  scheduleVersion: `${metroMetadata.validFrom}:${metroMetadata.checkedAt}`,
+  appVersion: metroMetadata.appVersion,
+  scheduleVersion: metroMetadata.scheduleVersion,
   updateType: "improvements",
   updateSummary: "Доступна новая версия приложения.",
 });

@@ -44,7 +44,7 @@ export function RouteProgressCard({
       className="rounded-2xl border border-border bg-surface-raised p-4"
       aria-labelledby="route-progress-title"
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-4">
         <div className="min-w-0">
           <p
             id="route-progress-title"
@@ -52,16 +52,16 @@ export function RouteProgressCard({
           >
             Станция назначения
           </p>
-          <p className="mt-2 text-2xl font-bold text-text-primary break-words">
+          <p className="station-name mt-2 text-2xl font-bold leading-tight text-text-primary">
             {destinationStation.name}
           </p>
         </div>
 
-        <div className="shrink-0 text-right">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 border-t border-border pt-3 sm:block sm:shrink-0 sm:border-t-0 sm:pt-0 sm:text-right">
           <p className="text-lg font-semibold text-text-primary">
             {formatStationCount(stationCount)}
           </p>
-          <p className="mt-1 text-sm text-text-secondary">
+          <p className="text-sm text-text-secondary sm:mt-1">
             {formatApproximateTravelTime(travelSeconds)}
           </p>
         </div>
@@ -88,7 +88,7 @@ export function RouteProgressCard({
                 <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">
                   {getPointLabel(kind)}
                 </p>
-                <p className="mt-1 text-base font-semibold leading-6 text-text-primary break-words">
+                <p className="station-name mt-1 text-base font-semibold leading-6 text-text-primary">
                   {station.name}
                 </p>
               </div>

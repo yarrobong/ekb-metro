@@ -106,6 +106,12 @@ svg {
   font-variant-numeric: tabular-nums;
 }
 
+.station-name {
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: manual;
+}
+
 .focus-ring:focus-visible {
   outline: 3px solid rgba(16, 185, 129, 0.45);
   outline-offset: 3px;

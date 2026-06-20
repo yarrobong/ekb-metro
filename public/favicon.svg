@@ -1,6 +1,8 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" rx="124" fill="#0B0E12"/>
-  <rect x="84" y="84" width="344" height="344" rx="96" fill="#C62828"/>
-  <path d="M156 358V156H210L256 244L302 156H356V358H304V242L271 303H241L208 242V358H156Z" fill="white"/>
-  <path d="M144 391H368" stroke="#FFCC80" stroke-width="20" stroke-linecap="round"/>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="512"
+  height="512"
+  viewBox="0 0 512 512"
+>
+  <image href="pwa-512x512.png" width="512" height="512" />
 </svg>

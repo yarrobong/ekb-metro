@@ -8,8 +8,6 @@ import { LineMap } from "../components/metro/LineMap";
 import { BottomSheet } from "../components/ui/BottomSheet";
 import { DirectionSelectorModal } from "../components/metro/DirectionSelectorModal";
 
-import { metadata } from "../data/metadata";
-
 export function StationsPage() {
   const {
     selectedStationId,
@@ -58,13 +56,6 @@ export function StationsPage() {
         selectedStationId={selectedStationId}
         onStationSelect={handleStationSelect}
       />
-
-      <div className="text-center py-6 text-xs text-text-disabled">
-        <p>Екатеринбургский метрополитен</p>
-        <p className="mt-1">
-          Данные от {new Date(metadata.validFrom).toLocaleDateString("ru-RU")}
-        </p>
-      </div>
 
       <BottomSheet
         isOpen={isDirectionModalOpen && selectedStation !== null}

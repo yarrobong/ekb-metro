@@ -57,9 +57,10 @@ export interface SpecialDate {
 }
 
 export interface MetroMetadata {
-  version: string;
+  appVersion: string;
+  scheduleVersion: string;
   validFrom: string; // YYYY-MM-DD
-  checkedAt: string; // YYYY-MM-DD
+  lastVerifiedAt: string; // YYYY-MM-DD
   sourceUrl: string;
   sourceName: string;
   timezone: "Asia/Yekaterinburg";

@@ -90,4 +90,10 @@ describe("StationsPage component", () => {
 
     expect(dinamoItem).toHaveAttribute("aria-current", "true");
   });
+
+  it("does not show the technical schedule date footer", () => {
+    render(<StationsPage />);
+
+    expect(screen.queryByText(/Данные от/i)).not.toBeInTheDocument();
+  });
 });

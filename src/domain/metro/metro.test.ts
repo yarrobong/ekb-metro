@@ -66,6 +66,7 @@ describe("Metro Data Tests", () => {
     const res = MetroMetadataSchema.safeParse(metadata);
     expect(res.success).toBe(true);
     expect(metadata.timezone).toBe("Asia/Yekaterinburg");
+    expect(metadata.lastVerifiedAt).toBe("2026-06-21");
   });
 
   it("should ensure schedules are sorted with no duplicates and handle after midnight", () => {

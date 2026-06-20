@@ -12,15 +12,8 @@ import { Card } from "../components/ui/Card";
 import { IconButton } from "../components/ui/IconButton";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
+import { formatRussianDate } from "../domain/time";
 import { openSourceSchedule, reportIssue, shareApp } from "../lib/userActions";
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 export function AboutPage() {
   const {
@@ -65,7 +58,7 @@ export function AboutPage() {
 
         <h2 className="mt-5 text-2xl font-bold text-text-primary">Метро Екатеринбурга</h2>
         <p className="mt-1 text-sm font-medium text-text-secondary">
-          Метро ЕКБ · версия {metadata.version}
+          Метро ЕКБ · версия {metadata.appVersion}
         </p>
 
         <p className="mx-auto mt-5 max-w-md text-sm leading-7 text-text-secondary">
@@ -75,11 +68,15 @@ export function AboutPage() {
       </Card>
 
       <Card className="space-y-4">
-        <InfoRow label="Расписание актуально на" value={formatDate(metadata.validFrom)} />
         <InfoRow
-          label="Последняя проверка данных"
-          value={formatDate(metadata.checkedAt)}
+          label="Расписание действует с"
+          value={formatRussianDate(metadata.validFrom, metadata.timezone)}
         />
+        <InfoRow
+          label="Последняя проверка"
+          value={formatRussianDate(metadata.lastVerifiedAt, metadata.timezone)}
+        />
+        <InfoRow label="Версия расписания" value={metadata.scheduleVersion} />
         <InfoRow label="Источник расписания" value={metadata.sourceName} />
         <InfoRow label="Время" value="Екатеринбург" />
 
@@ -152,8 +149,8 @@ export function AboutPage() {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4 rounded-xl bg-surface-raised px-4 py-3">
-      <p className="text-sm text-text-secondary">{label}</p>
-      <p className="text-right text-sm font-medium text-text-primary">{value}</p>
+      <p className="min-w-0 text-sm text-text-secondary">{label}</p>
+      <p className="min-w-0 text-right text-sm font-medium text-text-primary">{value}</p>
     </div>
   );
 }

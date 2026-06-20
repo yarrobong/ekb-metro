@@ -61,9 +61,10 @@ export const SpecialDateSchema = z.object({
 });
 
 export const MetroMetadataSchema = z.object({
-  version: z.string().min(1),
+  appVersion: z.string().min(1),
+  scheduleVersion: z.string().min(1),
   validFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  checkedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  lastVerifiedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   sourceUrl: z.string().url(),
   sourceName: z.string().min(1),
   timezone: z.literal("Asia/Yekaterinburg"),

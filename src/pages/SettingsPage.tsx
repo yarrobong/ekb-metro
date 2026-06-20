@@ -134,7 +134,7 @@ export function SettingsPage() {
       </div>
 
       <p className="pb-4 text-center text-xs text-text-secondary">
-        Метро ЕКБ · версия {metadata.version}
+        Метро ЕКБ · версия {metadata.appVersion}
       </p>
     </div>
   );

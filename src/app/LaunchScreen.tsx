@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+const launchScreenIconSrc = `${import.meta.env.BASE_URL}pwa-192x192.png`;
+
 function getInitialReducedMotionPreference() {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return false;
@@ -38,9 +40,13 @@ export function LaunchScreen({ showStatus }: LaunchScreenProps) {
     >
       <div className="launch-screen__panel">
         <div className="launch-screen__mark" aria-hidden="true">
-          <span className="launch-screen__mark-ring" />
-          <span className="launch-screen__mark-pill launch-screen__mark-pill--left" />
-          <span className="launch-screen__mark-pill launch-screen__mark-pill--right" />
+          <img
+            className="launch-screen__mark-image"
+            src={launchScreenIconSrc}
+            width={80}
+            height={80}
+            alt=""
+          />
         </div>
 
         <p className="launch-screen__eyebrow">Екатеринбургский метрополитен</p>

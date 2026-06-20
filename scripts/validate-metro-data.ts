@@ -31,7 +31,7 @@ function validateData() {
       hasErrors = true;
     } else {
       console.log(
-        `Metadata version: ${metadata.version}, validFrom: ${metadata.validFrom}`,
+        `Metadata appVersion: ${metadata.appVersion}, scheduleVersion: ${metadata.scheduleVersion}, validFrom: ${metadata.validFrom}`,
       );
     }
   }

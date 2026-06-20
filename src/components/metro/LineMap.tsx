@@ -50,10 +50,10 @@ export function LineMap({ stations, selectedStationId, onStationSelect }: LineMa
               </div>
 
               {/* Название станции */}
-              <div className="ml-4 flex flex-col justify-center py-2">
+              <div className="ml-4 min-w-0 flex-1 py-2">
                 <span
                   className={cn(
-                    "text-lg font-medium transition-colors duration-200",
+                    "station-name block text-lg font-medium leading-tight transition-colors duration-200",
                     isSelected
                       ? "text-accent font-bold"
                       : "text-text-primary group-hover:text-white",

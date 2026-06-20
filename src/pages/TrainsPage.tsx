@@ -23,21 +23,8 @@ import { cn } from "../lib/cn";
 import { useLiveMetroTime } from "../app/hooks/useLiveMetroTime";
 import { resolveMetroState } from "../domain/metro/schedule.service";
 import { formatRelativeTime, formatTimer } from "../domain/time";
-import { metadata } from "../data/metadata";
 import { buildTravelEstimate, getDestinationOptions } from "../domain/metro";
 import { reportIssue } from "../lib/userActions";
-
-function formatDateRussian(dateStr: string) {
-  try {
-    return new Date(dateStr).toLocaleDateString("ru-RU", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
 
 export function TrainsPage() {
   const {
@@ -153,19 +140,21 @@ export function TrainsPage() {
   return (
     <div className="space-y-6 pb-8">
       {/* Current Station Header */}
-      <div className="flex items-center justify-between bg-surface-raised p-4 rounded-2xl">
-        <div>
+      <div className="flex items-start justify-between gap-3 rounded-2xl bg-surface-raised p-4">
+        <div className="min-w-0">
           <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">
             Текущая станция
           </p>
-          <div className="flex items-center gap-2">
-            <MapPin size={18} className="text-accent" />
-            <h2 className="text-lg font-bold text-text-primary">{station?.name}</h2>
+          <div className="flex min-w-0 items-start gap-2">
+            <MapPin size={18} className="mt-0.5 shrink-0 text-accent" />
+            <h2 className="station-name min-w-0 text-lg font-bold leading-tight text-text-primary">
+              {station?.name}
+            </h2>
           </div>
         </div>
         <button
           onClick={() => setScreen("stations")}
-          className="focus-ring text-sm font-medium text-accent hover:text-accent-hover transition px-3 py-1.5 bg-accent/10 rounded-lg"
+          className="focus-ring shrink-0 rounded-lg bg-accent/10 px-3 py-1.5 text-sm font-medium text-accent transition hover:text-accent-hover"
         >
           Изменить
         </button>
@@ -206,17 +195,19 @@ export function TrainsPage() {
 
       {/* Next Station Info */}
       {nextStation && (
-        <div className="flex items-center gap-3 px-2">
-          <ArrowRightLeft size={16} className="text-text-disabled" />
-          <p className="text-sm text-text-secondary">
+        <div className="flex items-start gap-3 px-2">
+          <ArrowRightLeft size={16} className="mt-0.5 shrink-0 text-text-disabled" />
+          <p className="min-w-0 text-sm leading-5 text-text-secondary">
             Следующая станция:{" "}
-            <span className="font-medium text-text-primary">{nextStation.name}</span>
+            <span className="station-name font-medium text-text-primary">
+              {nextStation.name}
+            </span>
           </p>
         </div>
       )}
       {!nextStation && (
-        <div className="flex items-center gap-3 px-2">
-          <ArrowRightLeft size={16} className="text-error" />
+        <div className="flex items-start gap-3 px-2">
+          <ArrowRightLeft size={16} className="mt-0.5 shrink-0 text-error" />
           <p className="text-sm text-error">Не удалось определить следующую станцию.</p>
         </div>
       )}
@@ -517,7 +508,7 @@ export function TrainsPage() {
       )}
 
       {/* Footer Info */}
-      <div className="text-center space-y-2 mt-8 opacity-60">
+      <div className="mt-8 space-y-2 text-center opacity-60">
         <p className="text-xs font-medium text-text-primary bg-surface-raised inline-block px-3 py-1.5 rounded-lg mb-2">
           {metroState.dayType === "weekend" ? "Выходной день" : "Рабочий день"}
         </p>
@@ -526,9 +517,6 @@ export function TrainsPage() {
             После полуночи показывается поезд предыдущего операционного дня.
           </p>
         )}
-        <p className="text-xs text-text-secondary">
-          Расписание обновлено {formatDateRussian(metadata.checkedAt)}
-        </p>
         <p className="text-[11px] leading-relaxed text-text-secondary max-w-xs mx-auto">
           Время рассчитано по расписанию. Фактическое движение поездов может отличаться.
         </p>

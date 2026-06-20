@@ -85,3 +85,21 @@ export function formatRelativeTime(secondsDiff: number, showSeconds: boolean): s
 
   return formatMinutes(mins);
 }
+
+export function formatRussianDate(
+  dateString: string,
+  timeZone = "Asia/Yekaterinburg",
+): string {
+  const [year, month, day] = dateString.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return dateString;
+  }
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone,
+  }).format(new Date(Date.UTC(year, month - 1, day, 12)));
+}
