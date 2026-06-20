@@ -14,7 +14,7 @@ export interface NearestTrain {
   totalSeconds: number;
   secondsLeft: number;
   status: TrainStatus;
-  isLast: boolean;
+  isLastTrain: boolean;
   originalIndex: number;
 }
 
@@ -292,7 +292,7 @@ function buildTrain(
     totalSeconds,
     secondsLeft: totalSeconds - nowSeconds,
     status,
-    isLast: index === scheduleTimes.length - 1,
+    isLastTrain: index === scheduleTimes.length - 1,
     originalIndex: index,
   };
 }

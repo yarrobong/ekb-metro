@@ -105,7 +105,7 @@ describe("App", () => {
     await user.click(await screen.findByRole("button", { name: /Выбрать станцию/i }));
     await user.click(await screen.findByRole("button", { name: /Ботаническая/i }));
 
-    expect(await screen.findByText("2 станции")).toBeInTheDocument();
+    expect((await screen.findAllByText("2 станции")).length).toBeGreaterThan(0);
 
     await user.click(screen.getByText("К Пр. Космонавтов"));
 

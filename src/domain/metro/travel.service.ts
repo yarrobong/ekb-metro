@@ -16,6 +16,7 @@ export interface DestinationOption {
 
 export interface TravelEstimate {
   destination: Station;
+  routeStations: Station[];
   stationCount: number;
   segmentCount: number;
   travelSeconds: number;
@@ -81,6 +82,7 @@ export function getTravelSummary(
   destinationStationId: StationId,
   directionId: DirectionId,
 ): {
+  routeStations: Station[];
   stationCount: number;
   segmentCount: number;
   travelSeconds: number;
@@ -112,6 +114,7 @@ export function getTravelSummary(
   }
 
   return {
+    routeStations: buildRouteStations(path, currentStation),
     stationCount: path.length,
     segmentCount: path.length,
     travelSeconds: path.reduce((sum, segment) => sum + segment.timeSeconds, 0),
@@ -146,6 +149,7 @@ export function buildTravelEstimate(
 
   return {
     destination,
+    routeStations: summary.routeStations,
     stationCount: summary.stationCount,
     segmentCount: summary.segmentCount,
     travelSeconds: summary.travelSeconds,
@@ -191,6 +195,15 @@ export function formatStationCount(count: number): string {
 
 export function formatApproximateTravelTime(seconds: number): string {
   return `Примерно ${formatMinutes(roundTravelMinutes(seconds))} в пути`;
+}
+
+export function formatRouteDescription(
+  currentStation: Station,
+  destinationStation: Station,
+  stationCount: number,
+  travelSeconds: number,
+): string {
+  return `Маршрут от ${formatStationNameForRoute(currentStation.name, "from")} до ${formatStationNameForRoute(destinationStation.name, "to")}, ${formatCountWithWord(stationCount, "station")}, примерно ${formatCountWithWord(roundTravelMinutes(travelSeconds), "minute")}.`;
 }
 
 function getPathSegments(
@@ -242,6 +255,21 @@ function getPathSegments(
   return segments;
 }
 
+function buildRouteStations(path: DriveTime[], currentStation: Station): Station[] {
+  const routeStations: Station[] = [currentStation];
+
+  for (const segment of path) {
+    const nextStation = getStation(segment.to);
+    if (!nextStation) {
+      return routeStations;
+    }
+
+    routeStations.push(nextStation);
+  }
+
+  return routeStations;
+}
+
 function getStation(stationId: StationId) {
   return stations.find((station) => station.id === stationId);
 }
@@ -276,6 +304,89 @@ function roundTravelMinutes(seconds: number): number {
 
 function normalizeTrainSeconds(scheduleTime: string): number {
   return timeStringToSeconds(scheduleTime);
+}
+
+function formatStationNameForRoute(
+  stationName: string,
+  preposition: "from" | "to",
+): string {
+  const forms: Record<string, { from: string; to: string }> = {
+    Геологическая: {
+      from: "Геологической",
+      to: "Геологической",
+    },
+    Чкаловская: {
+      from: "Чкаловской",
+      to: "Чкаловской",
+    },
+    Ботаническая: {
+      from: "Ботанической",
+      to: "Ботанической",
+    },
+    Уральская: {
+      from: "Уральской",
+      to: "Уральской",
+    },
+    "Площадь 1905 года": {
+      from: "Площади 1905 года",
+      to: "Площади 1905 года",
+    },
+    "Проспект Космонавтов": {
+      from: "Проспекта Космонавтов",
+      to: "Проспекта Космонавтов",
+    },
+  };
+
+  return forms[stationName]?.[preposition] ?? stationName;
+}
+
+function formatCountWithWord(count: number, noun: "station" | "minute"): string {
+  const words = {
+    1: "одна",
+    2: "две",
+    3: "три",
+    4: "четыре",
+    5: "пять",
+    6: "шесть",
+    7: "семь",
+    8: "восемь",
+    9: "девять",
+    10: "десять",
+    11: "одиннадцать",
+    12: "двенадцать",
+    13: "тринадцать",
+    14: "четырнадцать",
+    15: "пятнадцать",
+    16: "шестнадцать",
+    17: "семнадцать",
+    18: "восемнадцать",
+    19: "девятнадцать",
+    20: "двадцать",
+  } as const;
+
+  const value = words[count as keyof typeof words] ?? String(count);
+
+  if (noun === "station") {
+    if (count % 10 === 1 && count % 100 !== 11) {
+      return `${value} станция`;
+    }
+
+    if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14)) {
+      return `${value} станции`;
+    }
+
+    return `${value} станций`;
+  }
+
+  if (count % 10 === 1 && count % 100 !== 11) {
+    return `${value} минута`;
+  }
+
+  if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14)) {
+    return `${value} минуты`;
+  }
+
+  return `${value} минут`;
 }
 
 function formatArrivalTimeLabel(

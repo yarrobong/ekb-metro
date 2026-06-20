@@ -5,10 +5,15 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 
 export function PwaUpdateBanner() {
-  const { updateAvailable, isApplyingUpdate, applyUpdate, dismissUpdatePrompt } =
-    usePwa();
+  const {
+    updateAvailable,
+    updateInfo,
+    isApplyingUpdate,
+    applyUpdate,
+    dismissUpdatePrompt,
+  } = usePwa();
 
-  if (!updateAvailable) {
+  if (!updateAvailable || !updateInfo) {
     return null;
   }
 
@@ -21,9 +26,9 @@ export function PwaUpdateBanner() {
               <Download size={18} aria-hidden="true" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-text-primary">Доступно обновление</p>
+              <p className="font-semibold text-text-primary">{updateInfo.title}</p>
               <p className="mt-1 text-sm leading-6 text-text-secondary">
-                Обновлено расписание или улучшена работа приложения.
+                {updateInfo.description}
               </p>
             </div>
           </div>

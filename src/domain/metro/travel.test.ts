@@ -5,6 +5,7 @@ import type { MetroServiceState } from "./schedule.service";
 import {
   buildTravelEstimate,
   formatApproximateTravelTime,
+  formatRouteDescription,
   formatStationCount,
   getDestinationOptions,
   getTravelSummary,
@@ -42,11 +43,70 @@ describe("Travel Service", () => {
     );
 
     expect(summary).toEqual({
+      routeStations: [
+        expect.objectContaining({ id: "geologicheskaya" }),
+        expect.objectContaining({ id: "chkalovskaya" }),
+        expect.objectContaining({ id: "botanicheskaya" }),
+      ],
       stationCount: 2,
       segmentCount: 2,
       travelSeconds: 360,
       includesApproximateSegments: true,
     });
+  });
+
+  it("builds a route for one station without duplicating the current station", () => {
+    const summary = getTravelSummary(
+      "geologicheskaya",
+      "chkalovskaya",
+      "to-botanicheskaya",
+    );
+
+    expect(summary?.routeStations.map((station) => station.id)).toEqual([
+      "geologicheskaya",
+      "chkalovskaya",
+    ]);
+    expect(summary?.stationCount).toBe(1);
+  });
+
+  it("builds the full line route in forward order", () => {
+    const summary = getTravelSummary(
+      "prospekt-kosmonavtov",
+      "botanicheskaya",
+      "to-botanicheskaya",
+    );
+
+    expect(summary?.routeStations.map((station) => station.id)).toEqual([
+      "prospekt-kosmonavtov",
+      "uralmash",
+      "mashinostroiteley",
+      "uralskaya",
+      "dinamo",
+      "ploshchad-1905-goda",
+      "geologicheskaya",
+      "chkalovskaya",
+      "botanicheskaya",
+    ]);
+  });
+
+  it("builds the full line route in reverse order", () => {
+    const summary = getTravelSummary(
+      "botanicheskaya",
+      "prospekt-kosmonavtov",
+      "to-prospekt-kosmonavtov",
+    );
+
+    expect(summary?.routeStations.map((station) => station.id)).toEqual([
+      "botanicheskaya",
+      "chkalovskaya",
+      "geologicheskaya",
+      "ploshchad-1905-goda",
+      "dinamo",
+      "uralskaya",
+      "mashinostroiteley",
+      "uralmash",
+      "prospekt-kosmonavtov",
+    ]);
   });
 
   it("rejects invalid destination against direction", () => {
@@ -71,7 +131,7 @@ describe("Travel Service", () => {
         totalSeconds: 18 * 3600 + 27 * 60,
         secondsLeft: 180,
         status: "waiting",
-        isLast: false,
+        isLastTrain: false,
         originalIndex: 12,
       },
       next: [],
@@ -90,6 +150,11 @@ describe("Travel Service", () => {
 
     expect(estimate?.boardingTimeLabel).toBe("18:27");
     expect(estimate?.arrivalTimeLabel).toBe("18:33");
+    expect(estimate?.routeStations.map((station) => station.id)).toEqual([
+      "geologicheskaya",
+      "chkalovskaya",
+      "botanicheskaya",
+    ]);
     expect(estimate?.roundedTravelMinutes).toBe(6);
     expect(estimate?.roundedTotalMinutesUntilArrival).toBe(9);
   });
@@ -106,7 +171,7 @@ describe("Travel Service", () => {
         totalSeconds: 23 * 3600 + 58 * 60,
         secondsLeft: 60,
         status: "waiting",
-        isLast: true,
+        isLastTrain: true,
         originalIndex: 99,
       },
       next: [],
@@ -138,5 +203,25 @@ describe("Travel Service", () => {
     expect(formatStationCount(2)).toBe("2 станции");
     expect(formatStationCount(5)).toBe("5 станций");
     expect(formatApproximateTravelTime(130)).toBe("Примерно 3 минуты в пути");
+  });
+
+  it("formats a single screen reader route description", () => {
+    const summary = getTravelSummary(
+      "geologicheskaya",
+      "botanicheskaya",
+      "to-botanicheskaya",
+    );
+
+    expect(summary).not.toBeNull();
+    expect(
+      formatRouteDescription(
+        summary!.routeStations[0]!,
+        summary!.routeStations[summary!.routeStations.length - 1]!,
+        summary!.stationCount,
+        summary!.travelSeconds,
+      ),
+    ).toBe(
+      "Маршрут от Геологической до Ботанической, две станции, примерно шесть минут.",
+    );
   });
 });

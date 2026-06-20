@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "npm run validate:data && tsc -b && vite build",
+    "build:e2e": "VITE_E2E=true npm run build",
     "preview": "vite preview",
+    "preview:e2e": "tsx scripts/preview-e2e.ts",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -14,6 +16,8 @@
     "format:check": "prettier . --check",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "validate:data": "tsx scripts/validate-metro-data.ts"
   },
   "dependencies": {
@@ -28,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

@@ -4,7 +4,7 @@ import type { MetroServiceState } from "../domain/metro/schedule.service";
 import type { StationId, DirectionId } from "../domain/metro/metro.types";
 import { getCurrentAppUrl, getDeviceInfo } from "./device";
 
-const SUPPORT_ISSUES_URL = "https://github.com/yarrobong/ebk-metro/issues/new";
+const SUPPORT_ISSUES_URL = "https://github.com/yarrobong/ekb-metro/issues/new";
 
 export async function shareApp(): Promise<"shared" | "copied" | "manual" | "cancelled"> {
   const url = getCurrentAppUrl();

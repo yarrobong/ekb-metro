@@ -3,8 +3,14 @@ import { useRegisterSW } from "virtual:pwa-register/react";
 
 import { useAppStore } from "./store";
 import { PwaContext, type InstallMethod, type PwaContextValue } from "./pwa-context";
-import { metadata } from "../data/metadata";
 import { getDeviceInfo } from "../lib/device";
+import {
+  currentUpdateMetadata,
+  getUpdateMetadataUrl,
+  resolveAvailableUpdate,
+  updateMetadataSchema,
+  type AvailableUpdateDetails,
+} from "./update/updateMetadata";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -12,7 +18,6 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const INSTALL_DISMISS_KEY = "metro-install-dismissed-at";
-const OFFLINE_READY_KEY = `metro-offline-ready-${metadata.version}`;
 const INSTALL_DISMISS_MS = 3 * 24 * 60 * 60 * 1000;
 
 export function PwaProvider({ children }: { children: ReactNode }) {
@@ -25,27 +30,30 @@ export function PwaProvider({ children }: { children: ReactNode }) {
   const [installDismissedAt, setInstallDismissedAt] = useState<number>(() =>
     readNumberFromStorage(INSTALL_DISMISS_KEY),
   );
+  const [availableUpdate, setAvailableUpdate] = useState<AvailableUpdateDetails | null>(
+    null,
+  );
+  const [dismissedUpdateSignature, setDismissedUpdateSignature] = useState<string | null>(
+    null,
+  );
   const [isApplyingUpdate, setIsApplyingUpdate] = useState(false);
   const [isCheckingForUpdates, setIsCheckingForUpdates] = useState(false);
+  const [hasWaitingWorker, setHasWaitingWorker] = useState(false);
+  const [isRegistrationReady, setIsRegistrationReady] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | undefined>(undefined);
 
   const {
-    needRefresh: [needRefresh, setNeedRefresh],
+    needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     immediate: false,
     onRegisteredSW(_swUrl: string, registration: ServiceWorkerRegistration | undefined) {
       registrationRef.current = registration;
+      setHasWaitingWorker(Boolean(registration?.waiting));
+      setIsRegistrationReady(true);
     },
-    onOfflineReady() {
-      if (!readBooleanFromStorage(OFFLINE_READY_KEY)) {
-        showToast("Приложение готово к работе без интернета", "success");
-        writeBooleanToStorage(OFFLINE_READY_KEY, true);
-      }
-    },
-    onRegisterError() {
-      showToast("Не удалось подготовить офлайн-режим", "warning");
-    },
+    onOfflineReady() {},
+    onRegisterError() {},
   });
 
   useEffect(() => {
@@ -91,29 +99,67 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     Date.now() - installDismissedAt > INSTALL_DISMISS_MS &&
     installMethod !== "unavailable";
 
-  const checkForUpdatesInternal = useCallback(async (): Promise<
-    "latest" | "available" | "offline" | "error"
-  > => {
+  useEffect(() => {
+    setHasWaitingWorker(needRefresh || Boolean(registrationRef.current?.waiting));
+  }, [needRefresh]);
+
+  const checkForUpdatesInternal = useCallback(async (): Promise<{
+    result: "latest" | "available" | "offline" | "error";
+    update: AvailableUpdateDetails | null;
+  }> => {
     if (!navigator.onLine) {
-      return "offline";
+      return { result: "offline", update: null };
     }
 
     if (!registrationRef.current) {
-      return "error";
+      return { result: "error", update: null };
     }
 
     try {
       setIsCheckingForUpdates(true);
+      const response = await fetch(getUpdateMetadataUrl(), {
+        cache: "no-store",
+        headers: {
+          accept: "application/json",
+        },
+      });
+
       await registrationRef.current.update();
-      return registrationRef.current.waiting || needRefresh ? "available" : "latest";
+
+      if (!response.ok) {
+        return { result: "error", update: null };
+      }
+
+      const remoteUpdate = updateMetadataSchema.parse(await response.json());
+      const resolvedUpdate = resolveAvailableUpdate(currentUpdateMetadata, remoteUpdate);
+      const workerReady = Boolean(registrationRef.current.waiting) || needRefresh;
+
+      setAvailableUpdate(resolvedUpdate);
+      setHasWaitingWorker(workerReady);
+
+      return {
+        result: resolvedUpdate && workerReady ? "available" : "latest",
+        update: resolvedUpdate,
+      };
     } catch {
-      return "error";
+      return {
+        result: navigator.onLine ? "error" : "offline",
+        update: null,
+      };
     } finally {
       setIsCheckingForUpdates(false);
     }
   }, [needRefresh]);
 
   useEffect(() => {
+    if (!isRegistrationReady) {
+      return;
+    }
+
+    const initialCheckTimeout = window.setTimeout(() => {
+      void checkForUpdatesInternal();
+    }, 0);
+
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         void checkForUpdatesInternal();
@@ -130,10 +176,11 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
+      window.clearTimeout(initialCheckTimeout);
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [checkForUpdatesInternal]);
+  }, [checkForUpdatesInternal, isRegistrationReady]);
 
   async function openInstallPrompt() {
     if (installMethod !== "prompt" || !deferredPrompt) {
@@ -157,39 +204,71 @@ export function PwaProvider({ children }: { children: ReactNode }) {
   }
 
   async function applyUpdate() {
+    if (isApplyingUpdate) {
+      return;
+    }
+
     setIsApplyingUpdate(true);
+
     try {
+      const registration = registrationRef.current;
+
+      if (!registration) {
+        throw new Error("Service worker is not registered");
+      }
+
+      await registration.update();
+      const workerReady = Boolean(registration.waiting) || needRefresh;
+
+      setHasWaitingWorker(workerReady);
+
+      if (!workerReady) {
+        throw new Error("Updated service worker is not ready");
+      }
+
       await updateServiceWorker(true);
+    } catch {
+      showToast("Не удалось обновить приложение", "error");
     } finally {
       setIsApplyingUpdate(false);
     }
   }
 
   function dismissUpdatePrompt() {
-    setNeedRefresh(false);
+    if (availableUpdate) {
+      setDismissedUpdateSignature(availableUpdate.signature);
+    }
   }
 
   async function checkForUpdates() {
-    const result = await checkForUpdatesInternal();
+    const { result, update } = await checkForUpdatesInternal();
 
-    if (result === "latest") {
+    if (result === "available") {
+      showToast(update?.title ?? "Доступно обновление", "success");
+    } else if (result === "latest") {
       showToast("Установлена последняя версия", "info");
-    } else if (result === "available") {
-      showToast("Доступно обновление", "success");
     } else if (result === "offline") {
       showToast("Нет подключения к интернету", "warning");
-    } else {
+    } else if (result === "error") {
       showToast("Не удалось проверить обновления", "error");
     }
 
     return result;
   }
 
+  const updateInfo =
+    availableUpdate &&
+    dismissedUpdateSignature !== availableUpdate.signature &&
+    hasWaitingWorker
+      ? availableUpdate
+      : null;
+
   const value: PwaContextValue = {
     isStandalone,
     installMethod,
     shouldShowInstallPrompt,
-    updateAvailable: needRefresh,
+    updateAvailable: updateInfo !== null,
+    updateInfo,
     isCheckingForUpdates,
     isApplyingUpdate,
     dismissInstallPrompt,
@@ -210,22 +289,6 @@ function readNumberFromStorage(key: string): number {
 }
 
 function writeNumberToStorage(key: string, value: number) {
-  try {
-    window.localStorage.setItem(key, String(value));
-  } catch {
-    // Ignore storage errors for non-critical PWA hints.
-  }
-}
-
-function readBooleanFromStorage(key: string): boolean {
-  try {
-    return window.localStorage.getItem(key) === "true";
-  } catch {
-    return false;
-  }
-}
-
-function writeBooleanToStorage(key: string, value: boolean) {
   try {
     window.localStorage.setItem(key, String(value));
   } catch {

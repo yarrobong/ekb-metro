@@ -1,5 +1,7 @@
 import { createContext } from "react";
 
+import type { AvailableUpdateDetails } from "./update/updateMetadata";
+
 export type InstallMethod = "prompt" | "manual" | "unavailable";
 
 export interface PwaContextValue {
@@ -7,6 +9,7 @@ export interface PwaContextValue {
   installMethod: InstallMethod;
   shouldShowInstallPrompt: boolean;
   updateAvailable: boolean;
+  updateInfo: AvailableUpdateDetails | null;
   isCheckingForUpdates: boolean;
   isApplyingUpdate: boolean;
   dismissInstallPrompt: () => void;

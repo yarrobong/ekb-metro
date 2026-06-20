@@ -3,13 +3,13 @@
 ## Target
 
 The intended static host is GitHub Pages at:
-`https://yarrobong.github.io/ebk-metro/`
+`https://yarrobong.github.io/ekb-metro/`
 
 ## Production assumptions
 
-- Vite `base` must stay `/ebk-metro/`.
-- Manifest `start_url` and `scope` must match `/ebk-metro/`.
-- `public/404.html` must redirect to `/ebk-metro/`.
+- Vite `base` must stay `/ekb-metro/`.
+- Manifest `start_url` and `scope` must match `/ekb-metro/`.
+- `public/404.html` must redirect to `/ekb-metro/`.
 - Only the `dist` directory should be uploaded to GitHub Pages.
 
 ## Local verification
@@ -42,7 +42,7 @@ The workflow should:
 
 ## Manual release checks
 
-- Confirm the build opens from the `/ebk-metro/` base path.
+- Confirm the build opens from the `/ekb-metro/` base path.
 - Confirm install prompt behavior on Android and desktop.
 - Confirm manual install instructions on iPhone.
 - Confirm offline launch after the first online visit.

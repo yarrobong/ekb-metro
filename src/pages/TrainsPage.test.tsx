@@ -99,7 +99,7 @@ describe("TrainsPage component", () => {
     fireEvent.click(screen.getByRole("button", { name: /Ботаническая/i }));
 
     expect(screen.getByText("Станция назначения")).toBeInTheDocument();
-    expect(screen.getByText("Ботаническая")).toBeInTheDocument();
+    expect(screen.getAllByText("Ботаническая").length).toBeGreaterThan(0);
     expect(screen.getByText("2 станции")).toBeInTheDocument();
     expect(screen.getByText("Примерно 6 минут в пути")).toBeInTheDocument();
     expect(screen.getByText("Ориентировочное прибытие")).toBeInTheDocument();

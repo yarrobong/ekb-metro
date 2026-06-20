@@ -24,7 +24,7 @@ describe("reportIssue", () => {
     expect(window.open).toHaveBeenCalledTimes(1);
 
     const [url, target, features] = vi.mocked(window.open).mock.calls[0] ?? [];
-    expect(url).toContain("https://github.com/yarrobong/ebk-metro/issues/new?");
+    expect(url).toContain("https://github.com/yarrobong/ekb-metro/issues/new?");
     expect(url).toContain("title=");
     expect(url).toContain("body=");
     expect(url).toContain(
