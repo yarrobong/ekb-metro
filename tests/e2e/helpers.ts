@@ -1,7 +1,5 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test";
 
-import { METRO_E2E_TIME_EVENT, METRO_E2E_TIME_KEY } from "../../src/app/testing/e2eTime";
-
 export const TEST_TIME_31_SECONDS = "2024-01-05T18:30:29+05:00";
 export const TEST_TIME_30_SECONDS = "2024-01-05T18:30:30+05:00";
 export const TEST_TIME_1_SECOND = "2024-01-05T18:30:59+05:00";
@@ -9,6 +7,8 @@ export const TEST_TIME_ARRIVING = "2024-01-05T18:31:05+05:00";
 export const TEST_TIME_NEXT_TRAIN = "2024-01-05T18:31:16+05:00";
 export const TEST_TIME_BEFORE_OPEN = "2024-01-08T05:58:59+05:00";
 export const TEST_TIME_AFTER_CLOSE = "2024-01-06T00:15:16+05:00";
+const METRO_E2E_TIME_KEY = "metro-e2e-now";
+const METRO_E2E_TIME_EVENT = "metro:e2e-time-change";
 
 export async function seedMetroTime(page: Page, isoString: string) {
   await page.addInitScript(

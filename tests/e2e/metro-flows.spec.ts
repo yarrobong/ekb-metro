@@ -21,10 +21,13 @@ test.describe("critical metro flows", () => {
     ).toBeVisible();
     await page.getByRole("button", { name: /Ботаническая/i }).click();
 
-    await expect(page.getByText("Станция назначения")).toBeVisible();
-    await expect(page.getByText("Ботаническая")).toBeVisible();
-    await expect(page.getByText("2 станции")).toBeVisible();
-    await expect(page.getByText("Примерно 6 минут в пути")).toBeVisible();
+    const routeProgressCard = page.getByRole("region", {
+      name: "Станция назначения",
+    });
+    await expect(routeProgressCard).toBeVisible();
+    await expect(routeProgressCard.getByText("Ботаническая").first()).toBeVisible();
+    await expect(routeProgressCard.getByText("2 станции")).toBeVisible();
+    await expect(routeProgressCard.getByText("Примерно 6 минут в пути")).toBeVisible();
 
     await page.getByRole("button", { name: "К Пр. Космонавтов" }).click();
 
