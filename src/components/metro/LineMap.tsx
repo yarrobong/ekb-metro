@@ -42,7 +42,7 @@ export function LineMap({ stations, selectedStationId, onStationSelect }: LineMa
                   "relative flex size-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-200",
                   isSelected
                     ? "border-accent bg-accent shadow-[0_0_12px_rgba(16,185,129,0.5)]"
-                    : "border-surface-raised bg-app-bg group-hover:border-text-secondary",
+                    : "border-border-strong bg-surface ring-1 ring-border-light group-hover:border-text-secondary group-hover:ring-border",
                 )}
                 aria-hidden="true"
               >

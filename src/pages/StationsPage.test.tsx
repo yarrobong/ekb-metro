@@ -34,10 +34,12 @@ describe("StationsPage component", () => {
     const geolochicheskaya = screen.getByText("Геологическая");
     await user.click(geolochicheskaya);
 
-    const sheetTitle = await screen.findByText("Выберите направление");
-    expect(sheetTitle).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Геологическая" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Выберите направление")).toBeInTheDocument();
 
-    const buttons = screen.getAllByRole("button", { name: /Направление/i });
+    const buttons = screen.getAllByRole("button", { name: /В сторону/i });
     expect(buttons.length).toBe(2);
   });
 
@@ -49,7 +51,7 @@ describe("StationsPage component", () => {
     await user.click(screen.getByText("Уральская"));
 
     // Wait for the modal
-    const directions = await screen.findAllByRole("button", { name: /Направление/i });
+    const directions = await screen.findAllByRole("button", { name: /В сторону/i });
 
     // Click on the direction pointing towards Botanicheskaya
     const towardsBotanicheskaya = directions.find((btn) =>
@@ -73,7 +75,7 @@ describe("StationsPage component", () => {
     await user.click(kosmonavtov);
 
     // Modal shouldn't show up
-    expect(screen.queryByText("Выберите направление")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     const state = useAppStore.getState();
     expect(state.selectedStationId).toBe("prospekt-kosmonavtov");

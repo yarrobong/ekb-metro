@@ -5,8 +5,8 @@ import type { StationId } from "../domain/metro/metro.types";
 
 import { PageHeader } from "../components/ui/PageHeader";
 import { LineMap } from "../components/metro/LineMap";
-import { BottomSheet } from "../components/ui/BottomSheet";
 import { DirectionSelectorModal } from "../components/metro/DirectionSelectorModal";
+import { FullScreenDialog } from "../components/ui/FullScreenDialog";
 
 export function StationsPage() {
   const {
@@ -57,11 +57,11 @@ export function StationsPage() {
         onStationSelect={handleStationSelect}
       />
 
-      <BottomSheet
+      <FullScreenDialog
         isOpen={isDirectionModalOpen && selectedStation !== null}
         onClose={closeDirectionModal}
-        title="Выберите направление"
-        description={selectedStation?.name || ""}
+        title={selectedStation?.name || ""}
+        description="Станция"
       >
         {selectedStation && (
           <DirectionSelectorModal
@@ -69,7 +69,7 @@ export function StationsPage() {
             onSelect={handleDirectionSelect}
           />
         )}
-      </BottomSheet>
+      </FullScreenDialog>
     </div>
   );
 }

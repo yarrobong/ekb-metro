@@ -68,7 +68,9 @@ describe("App", () => {
     await user.click(screen.getByText("Геологическая"));
 
     // Select direction 'Botanicheskaya'
-    const botanicalBtn = await screen.findByText("В сторону Ботанической");
+    const botanicalBtn = await screen.findByRole("button", {
+      name: "В сторону Ботанической",
+    });
     await user.click(botanicalBtn);
 
     // Verify Trains screen
@@ -100,7 +102,9 @@ describe("App", () => {
     render(<App />);
 
     await user.click(screen.getByText("Геологическая"));
-    await user.click(await screen.findByText("В сторону Ботанической"));
+    await user.click(
+      await screen.findByRole("button", { name: "В сторону Ботанической" }),
+    );
 
     await user.click(await screen.findByRole("button", { name: /Выбрать станцию/i }));
     await user.click(await screen.findByRole("button", { name: /Ботаническая/i }));
