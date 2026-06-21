@@ -91,6 +91,13 @@ export function TrainsPage() {
   const selectedDestination = selectedDestinationId
     ? getStationById(selectedDestinationId)
     : null;
+  const orderedDirectionIds = useMemo(() => {
+    if (!station) {
+      return [];
+    }
+
+    return [...station.availableDirections].sort(compareDirectionLayoutOrder);
+  }, [station]);
   const isDestinationValid = destinationOptions.some(
     (option) => option.station.id === selectedDestinationId,
   );
@@ -201,7 +208,7 @@ export function TrainsPage() {
       {/* Direction Toggle */}
       {station && station.availableDirections.length > 1 && (
         <div className="bg-surface-raised p-1.5 rounded-xl flex gap-1 relative overflow-hidden">
-          {station.availableDirections.map((dirId) => {
+          {orderedDirectionIds.map((dirId) => {
             const dir = getDirectionById(dirId);
             const isActive = dirId === selectedDirectionId;
             return (
@@ -697,4 +704,20 @@ function getRuntimeDayTypeLabel(dayType: "weekday" | "weekend" | "special"): str
   }
 
   return dayType === "weekend" ? "Выходной день" : "Будний день";
+}
+
+function compareDirectionLayoutOrder(leftDirectionId: string, rightDirectionId: string) {
+  return getDirectionLayoutOrder(leftDirectionId) - getDirectionLayoutOrder(rightDirectionId);
+}
+
+function getDirectionLayoutOrder(directionId: string) {
+  if (directionId === "to-prospekt-kosmonavtov") {
+    return 0;
+  }
+
+  if (directionId === "to-botanicheskaya") {
+    return 1;
+  }
+
+  return 99;
 }

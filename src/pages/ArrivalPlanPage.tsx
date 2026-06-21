@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarClock } from "lucide-react";
 
 import { useLiveMetroTime } from "../app/hooks/useLiveMetroTime";
@@ -52,6 +52,23 @@ export function ArrivalPlanPage() {
     selectedStationId && selectedDirectionId && selectedDestinationId
       ? getTravelSummary(selectedStationId, selectedDestinationId, selectedDirectionId)
       : null;
+  const todayDate = metroTime.dateString;
+  const tomorrowDate = shiftMetroDateString(todayDate, 1);
+  const selectedDate = arrivalPlanDraftDate ?? todayDate;
+  const selectedTime = arrivalPlanDraftTime ?? "19:00";
+  const inferredDatePreset =
+    selectedDate === todayDate
+      ? "today"
+      : selectedDate === tomorrowDate
+        ? "tomorrow"
+        : "custom";
+  const [datePresetOverride, setDatePresetOverride] = useState<
+    "today" | "tomorrow" | "custom" | null
+  >(null);
+  const selectedDatePreset = datePresetOverride ?? inferredDatePreset;
+  const customMaxDate = shiftMetroDateString(todayDate, 30);
+  const isDraftTimeValid = /^\d{2}:\d{2}$/.test(selectedTime);
+  const canCalculate = Boolean(selectedDate && isDraftTimeValid);
 
   useEffect(() => {
     if (arrivalPlanDraftDate && arrivalPlanDraftTime) {
@@ -143,20 +160,6 @@ export function ArrivalPlanPage() {
     );
   }
 
-  const todayDate = metroTime.dateString;
-  const tomorrowDate = shiftMetroDateString(todayDate, 1);
-  const selectedDate = arrivalPlanDraftDate ?? todayDate;
-  const selectedTime = arrivalPlanDraftTime ?? "19:00";
-  const selectedDatePreset =
-    selectedDate === todayDate
-      ? "today"
-      : selectedDate === tomorrowDate
-        ? "tomorrow"
-        : "custom";
-  const customMaxDate = shiftMetroDateString(todayDate, 30);
-  const isDraftTimeValid = /^\d{2}:\d{2}$/.test(selectedTime);
-  const canCalculate = Boolean(selectedDate && isDraftTimeValid);
-
   return (
     <div className="space-y-6 pb-8">
       <div className="sticky top-0 z-20 -mx-4 border-b border-border-light bg-app-bg/95 px-4 pb-4 pt-1 backdrop-blur-md">
@@ -233,6 +236,7 @@ export function ArrivalPlanPage() {
                 aria-checked={isActive}
                 onClick={() => {
                   const nextDate = option.value === "custom" ? selectedDate : option.date;
+                  setDatePresetOverride(option.value === "custom" ? "custom" : null);
                   setArrivalPlanDraft({
                     date: nextDate,
                     time: selectedTime,
@@ -270,6 +274,7 @@ export function ArrivalPlanPage() {
               min={todayDate}
               max={customMaxDate}
               onChange={(event) => {
+                setDatePresetOverride("custom");
                 setArrivalPlanDraft({
                   date: event.target.value,
                   time: selectedTime,

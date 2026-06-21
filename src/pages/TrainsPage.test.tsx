@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 
 import { useAppStore } from "../app/store";
 import { TrainsPage } from "./TrainsPage";
@@ -67,6 +67,26 @@ describe("TrainsPage component", () => {
     fireEvent.click(btn);
 
     expect(useAppStore.getState().selectedDirectionId).toBe("to-prospekt-kosmonavtov");
+  });
+
+  it("renders direction buttons from prospekt kosmonavtov to botanicheskaya", () => {
+    useAppStore.setState({
+      selectedStationId: "uralskaya",
+      selectedDirectionId: "to-botanicheskaya",
+    });
+
+    render(<TrainsPage />);
+
+    const directionToggle = screen
+      .getByRole("button", { name: /К Пр. Космонавтов/i })
+      .closest("div");
+
+    expect(directionToggle).not.toBeNull();
+
+    const buttons = within(directionToggle as HTMLElement).getAllByRole("button");
+
+    expect(buttons[0]).toHaveTextContent("К Пр. Космонавтов");
+    expect(buttons[1]).toHaveTextContent("К Ботанической");
   });
 
   it("handles terminus properly", () => {

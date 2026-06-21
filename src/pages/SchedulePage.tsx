@@ -40,6 +40,7 @@ export function SchedulePage() {
   const station = selectedStationId ? getStationById(selectedStationId) : null;
   const direction = selectedDirectionId ? getDirectionById(selectedDirectionId) : null;
   const groupRefs = useRef<Record<string, HTMLElement | null>>({});
+  const stickyHeaderRef = useRef<HTMLDivElement | null>(null);
   const lastAutoScrollKeyRef = useRef<string | null>(null);
 
   const schedule = useMemo(() => {
@@ -101,7 +102,7 @@ export function SchedulePage() {
     }
 
     lastAutoScrollKeyRef.current = autoScrollKey;
-    scrollToGroup(target);
+    scrollToGroup(target, stickyHeaderRef.current);
   }, [
     mode,
     nextGroupKey,
@@ -152,7 +153,10 @@ export function SchedulePage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <div className="sticky top-0 z-20 -mx-4 border-b border-border-light bg-app-bg/95 px-4 pb-4 pt-1 backdrop-blur-md">
+      <div
+        ref={stickyHeaderRef}
+        className="sticky top-0 z-20 -mx-4 border-b border-border-light bg-app-bg/95 px-4 pb-4 pt-1 backdrop-blur-md"
+      >
         <div className="flex items-center justify-between gap-3">
           <Button
             variant="ghost"
@@ -170,7 +174,7 @@ export function SchedulePage() {
               onClick={() => {
                 const target = nextGroupKey ? groupRefs.current[nextGroupKey] : null;
                 if (target) {
-                  scrollToGroup(target);
+                  scrollToGroup(target, stickyHeaderRef.current);
                 }
               }}
             >
@@ -493,14 +497,19 @@ function buildTrainAriaLabel(train: DayScheduleTrain): string {
   return parts.join(", ");
 }
 
-function scrollToGroup(element: HTMLElement) {
+function scrollToGroup(element: HTMLElement, stickyHeader: HTMLElement | null) {
   const prefersReducedMotion =
     typeof window !== "undefined" &&
     typeof window.matchMedia === "function" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  element.scrollIntoView({
-    block: "start",
+  const headerOffset = stickyHeader ? stickyHeader.getBoundingClientRect().height : 0;
+  const topPadding = 16;
+  const top =
+    window.scrollY + element.getBoundingClientRect().top - headerOffset - topPadding;
+
+  window.scrollTo({
+    top: Math.max(top, 0),
     behavior: prefersReducedMotion ? "auto" : "smooth",
   });
 }

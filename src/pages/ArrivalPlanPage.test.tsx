@@ -76,6 +76,18 @@ describe("Arrival plan flow", () => {
     );
   });
 
+  it("shows the custom date field after clicking another date", async () => {
+    const user = userEvent.setup();
+    useAppStore.setState({ selectedDestinationId: "botanicheskaya" });
+    render(<App />);
+
+    await user.click(screen.getByText("Прибыть ко времени"));
+    await user.click(screen.getByRole("radio", { name: "Другая дата" }));
+
+    expect(screen.getByText("Дата поездки")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("2024-01-05")).toBeInTheDocument();
+  });
+
   it("calculates and shows a successful arrival plan", async () => {
     const user = userEvent.setup();
     useAppStore.setState({ selectedDestinationId: "botanicheskaya" });

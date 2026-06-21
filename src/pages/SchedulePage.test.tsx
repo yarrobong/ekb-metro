@@ -95,4 +95,50 @@ describe("SchedulePage flow", () => {
     expect(screen.getByText("Будний день")).toBeInTheDocument();
     expect(screen.getByText("Ближайший")).toBeInTheDocument();
   });
+
+  it("scrolls the nearest train group below the sticky header", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByText("Первый и последний поезд"));
+
+    const nearestTrainGroup = screen.getByText("Ближайший").closest("section");
+    expect(nearestTrainGroup).not.toBeNull();
+
+    const stickyHeader = screen
+      .getByRole("heading", { name: "Расписание" })
+      .closest("div.sticky");
+    expect(stickyHeader).not.toBeNull();
+
+    vi.mocked(window.scrollTo).mockClear();
+    vi.spyOn(nearestTrainGroup!, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 420,
+      width: 320,
+      height: 96,
+      top: 420,
+      right: 320,
+      bottom: 516,
+      left: 0,
+      toJSON: () => ({}),
+    });
+    vi.spyOn(stickyHeader!, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      width: 320,
+      height: 240,
+      top: 0,
+      right: 320,
+      bottom: 240,
+      left: 0,
+      toJSON: () => ({}),
+    });
+
+    await user.click(screen.getByRole("button", { name: "К ближайшему" }));
+
+    expect(window.scrollTo).toHaveBeenCalledWith({
+      top: 164,
+      behavior: "smooth",
+    });
+  });
 });
