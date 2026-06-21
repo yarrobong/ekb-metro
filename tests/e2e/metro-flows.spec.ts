@@ -84,4 +84,43 @@ test.describe("critical metro flows", () => {
     await expect(page.getByText("Геологическая")).toBeVisible();
     await expect(page.getByText("Чкаловская")).toBeVisible();
   });
+
+  test("plans an arrival time, opens the full schedule and keeps the result on return", async ({
+    page,
+  }) => {
+    await seedMetroTime(page, TEST_TIME_31_SECONDS);
+    await openApp(page);
+
+    await selectRoute(page, "Геологическая", "В сторону Ботанической");
+    await page.getByRole("button", { name: "Выбрать станцию" }).click();
+    await page.getByRole("button", { name: /Ботаническая/i }).click();
+
+    await page.getByRole("button", { name: /Прибыть ко времени/i }).click();
+    await page.locator('input[type="time"]').fill("19:00");
+    await page.getByRole("button", { name: "Рассчитать поездку" }).click();
+
+    await expect(page.getByText("Успеваете")).toBeVisible();
+    await expect(page.getByText("18:50")).toBeVisible();
+    await expect(page.getByText("Прибытие примерно в 18:56")).toBeVisible();
+    await expect(page.getByText("Запас: 4 минуты")).toBeVisible();
+
+    await page.getByRole("button", { name: "Открыть полное расписание" }).click();
+
+    await expect(page.getByRole("heading", { name: "Расписание" })).toBeVisible();
+    await expect(page.getByText("Подходит для прибытия к 19:00")).toBeVisible();
+
+    await page.getByRole("button", { name: /Назад/i }).click();
+
+    await expect(page.getByRole("heading", { name: "Прибыть ко времени" })).toBeVisible();
+    await expect(page.getByText("18:50")).toBeVisible();
+
+    await page.getByRole("button", { name: /Назад/i }).click();
+
+    await expect(page.getByText("Следующий поезд")).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: /Прибыть к 19:00[\s\S]*Поезд в 18:50[\s\S]*Прибытие примерно в 18:56/i,
+      }),
+    ).toBeVisible();
+  });
 });

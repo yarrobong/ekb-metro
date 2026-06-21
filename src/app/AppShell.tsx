@@ -14,7 +14,7 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const showToast = useAppStore((state) => state.showToast);
   const screen = useAppStore((state) => state.screen);
-  const shouldShowBottomNavigation = screen !== "schedule";
+  const shouldShowBottomNavigation = screen !== "schedule" && screen !== "arrival-plan";
 
   useEffect(() => {
     const handleOffline = () => showToast("Нет подключения к интернету", "warning");

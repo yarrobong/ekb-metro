@@ -2,6 +2,7 @@ export type AppScreen =
   | "stations"
   | "trains"
   | "schedule"
+  | "arrival-plan"
   | "settings"
   | "about"
   | "install";

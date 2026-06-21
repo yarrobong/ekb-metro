@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import {
+  CalendarClock,
   Clock3,
   MapPin,
   ArrowRightLeft,
@@ -19,11 +20,22 @@ import { RouteProgressCard } from "../components/metro/RouteProgressCard";
 import { ScheduleSummaryCard } from "../components/metro/ScheduleSummaryCard";
 import { useAppStore } from "../app/store";
 import { usePwa } from "../app/usePwa";
-import { getStationById, getDirectionById, getNextStation } from "../domain/metro";
+import {
+  buildArrivalPlanRequest,
+  getStationById,
+  getDirectionById,
+  getNextStation,
+  planArrivalByTime,
+} from "../domain/metro";
 import { cn } from "../lib/cn";
 import { useLiveMetroTime } from "../app/hooks/useLiveMetroTime";
 import { resolveDaySchedule, resolveMetroState } from "../domain/metro/schedule.service";
-import { formatRelativeTime, formatRussianDayMonth, formatTimer } from "../domain/time";
+import {
+  formatRelativeTime,
+  formatRussianDayMonth,
+  formatTimer,
+  metroTimeToTimestamp,
+} from "../domain/time";
 import { buildTravelEstimate, getDestinationOptions } from "../domain/metro";
 import { reportIssue } from "../lib/userActions";
 
@@ -41,6 +53,9 @@ export function TrainsPage() {
     closeDestinationSheet,
     showSeconds,
     showToast,
+    arrivalPlanSubmittedDate,
+    arrivalPlanSubmittedTime,
+    clearScheduleContext,
   } = useAppStore();
   const {
     installMethod,
@@ -91,6 +106,23 @@ export function TrainsPage() {
           selectedDirectionId,
           metroState,
           metroTime,
+        )
+      : null;
+  const plannedArrivalResult =
+    selectedStationId &&
+    selectedDirectionId &&
+    selectedDestinationId &&
+    arrivalPlanSubmittedDate &&
+    arrivalPlanSubmittedTime
+      ? planArrivalByTime(
+          buildArrivalPlanRequest({
+            originStationId: selectedStationId,
+            destinationStationId: selectedDestinationId,
+            directionId: selectedDirectionId,
+            desiredDateString: arrivalPlanSubmittedDate,
+            desiredTimeString: arrivalPlanSubmittedTime,
+            nowTimestamp: metroTimeToTimestamp(metroTime),
+          }),
         )
       : null;
 
@@ -352,7 +384,10 @@ export function TrainsPage() {
           contextLabel={buildScheduleCardContext(daySchedule)}
           firstTrain={daySchedule.firstTrain}
           lastTrain={daySchedule.lastTrain}
-          onOpen={() => setScreen("schedule")}
+          onOpen={() => {
+            clearScheduleContext();
+            setScreen("schedule");
+          }}
           accessibleSummary={buildSummaryAriaLabel(daySchedule)}
         />
       )}
@@ -483,10 +518,71 @@ export function TrainsPage() {
               <p className="mt-2 text-xs text-text-secondary">
                 Расчёт ориентировочный и основан на нормативных временах перегонов.
               </p>
+
+              {plannedArrivalResult?.status === "success" &&
+                plannedArrivalResult.recommended && (
+                  <div className="mt-4 rounded-xl border border-accent/20 bg-accent/8 px-4 py-3">
+                    <p className="text-sm font-medium text-text-primary">
+                      План: прибыть к {plannedArrivalResult.request.desiredTimeString}
+                    </p>
+                    <p className="mt-1 text-sm text-text-secondary">
+                      Рекомендуемый поезд в{" "}
+                      <span className="tabular-nums font-semibold text-text-primary">
+                        {plannedArrivalResult.recommended.departureDisplayTime}
+                      </span>
+                    </p>
+                  </div>
+                )}
             </div>
           </div>
         )}
       </Card>
+
+      {selectedDestination && isDestinationValid && (
+        <button
+          type="button"
+          onClick={() => setScreen("arrival-plan")}
+          className="focus-ring w-full rounded-card border border-border-light bg-surface p-5 text-left shadow-card transition hover:bg-surface-hover active:scale-[0.995]"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+                <CalendarClock size={18} aria-hidden="true" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-text-primary">
+                  {plannedArrivalResult?.status === "success"
+                    ? `Прибыть к ${plannedArrivalResult.request.desiredTimeString}`
+                    : "Прибыть ко времени"}
+                </h3>
+                {plannedArrivalResult?.status === "success" &&
+                plannedArrivalResult.recommended ? (
+                  <>
+                    <p className="mt-1 text-sm text-text-secondary">
+                      Поезд в{" "}
+                      <span className="tabular-nums font-semibold text-text-primary">
+                        {plannedArrivalResult.recommended.departureDisplayTime}
+                      </span>
+                    </p>
+                    <p className="mt-1 text-sm text-text-secondary">
+                      Прибытие примерно в{" "}
+                      {plannedArrivalResult.recommended.arrivalDisplayTime}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm leading-6 text-text-secondary">
+                    Рассчитаем, на какой поезд сесть, чтобы приехать к нужному времени.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <span className="shrink-0 text-sm font-medium text-accent">
+              {plannedArrivalResult?.status === "success" ? "Изменить" : "Настроить"}
+            </span>
+          </div>
+        </button>
+      )}
 
       {shouldShowInstallPrompt && (
         <Card className="border-accent/30 bg-surface-raised/90">

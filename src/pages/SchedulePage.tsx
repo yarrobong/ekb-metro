@@ -7,6 +7,7 @@ import {
   getDirectionById,
   getStationById,
   resolveDaySchedule,
+  resolveDayScheduleForDate,
   type DayScheduleMode,
   type DayScheduleTrain,
 } from "../domain/metro";
@@ -18,23 +19,23 @@ import { Card } from "../components/ui/Card";
 import { FullScreenDialog } from "../components/ui/FullScreenDialog";
 import { cn } from "../lib/cn";
 
-const MODE_OPTIONS: Array<{ value: DayScheduleMode; label: string }> = [
-  { value: "today", label: "Сегодня" },
-  { value: "weekday", label: "Будни" },
-  { value: "weekend", label: "Выходные" },
-];
-
 export function SchedulePage() {
   const {
     selectedStationId,
     selectedDirectionId,
     setScreen,
     selectDirection,
+    scheduleContextDate,
+    scheduleHighlightedTrainTime,
+    scheduleHighlightLabel,
+    scheduleReturnScreen,
     isDirectionModalOpen,
     openDirectionModal,
     closeDirectionModal,
   } = useAppStore();
-  const [mode, setMode] = useState<DayScheduleMode>("today");
+  const [mode, setMode] = useState<DayScheduleMode>(
+    scheduleContextDate ? "date" : "today",
+  );
   const metroTime = useLiveMetroTime();
   const station = selectedStationId ? getStationById(selectedStationId) : null;
   const direction = selectedDirectionId ? getDirectionById(selectedDirectionId) : null;
@@ -46,8 +47,31 @@ export function SchedulePage() {
       return null;
     }
 
+    if (mode === "date" && scheduleContextDate) {
+      return resolveDayScheduleForDate(
+        selectedStationId,
+        selectedDirectionId,
+        scheduleContextDate,
+      );
+    }
+
     return resolveDaySchedule(selectedStationId, selectedDirectionId, metroTime, mode);
-  }, [selectedDirectionId, selectedStationId, mode, metroTime]);
+  }, [selectedDirectionId, selectedStationId, mode, metroTime, scheduleContextDate]);
+
+  const modeOptions: Array<{ value: DayScheduleMode; label: string }> = useMemo(
+    () => [
+      {
+        value: scheduleContextDate ? "date" : "today",
+        label:
+          scheduleContextDate && scheduleContextDate !== metroTime.dateString
+            ? "Дата"
+            : "Сегодня",
+      },
+      { value: "weekday", label: "Будни" },
+      { value: "weekend", label: "Выходные" },
+    ],
+    [scheduleContextDate, metroTime.dateString],
+  );
 
   const nextGroupKey = schedule?.nextTrain ? getGroupKey(schedule.nextTrain) : null;
 
@@ -91,7 +115,11 @@ export function SchedulePage() {
     return (
       <div className="space-y-6">
         <header className="flex items-center gap-3">
-          <Button variant="ghost" className="px-3" onClick={() => setScreen("trains")}>
+          <Button
+            variant="ghost"
+            className="px-3"
+            onClick={() => setScreen(scheduleReturnScreen ?? "trains")}
+          >
             <ArrowLeft size={18} aria-hidden="true" />
             Назад
           </Button>
@@ -126,7 +154,11 @@ export function SchedulePage() {
     <div className="space-y-6 pb-8">
       <div className="sticky top-0 z-20 -mx-4 border-b border-border-light bg-app-bg/95 px-4 pb-4 pt-1 backdrop-blur-md">
         <div className="flex items-center justify-between gap-3">
-          <Button variant="ghost" className="px-3" onClick={() => setScreen("trains")}>
+          <Button
+            variant="ghost"
+            className="px-3"
+            onClick={() => setScreen(scheduleReturnScreen ?? "trains")}
+          >
             <ArrowLeft size={18} aria-hidden="true" />
             Назад
           </Button>
@@ -196,7 +228,7 @@ export function SchedulePage() {
             aria-label="Режим просмотра расписания"
             className="mt-4 grid min-h-11 grid-cols-3 gap-1 rounded-2xl bg-surface-raised p-1"
           >
-            {MODE_OPTIONS.map((option) => {
+            {modeOptions.map((option) => {
               const isActive = option.value === mode;
 
               return (
@@ -290,11 +322,13 @@ export function SchedulePage() {
                             key={train.sourceTime}
                             className={cn(
                               "inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium tabular-nums",
-                              train.isNext
+                              train.sourceTime === scheduleHighlightedTrainTime
                                 ? "bg-accent-muted text-text-primary ring-1 ring-accent/35"
-                                : train.isPast
-                                  ? "bg-surface-raised text-text-secondary"
-                                  : "bg-surface-raised text-text-primary",
+                                : train.isNext
+                                  ? "bg-accent-muted text-text-primary ring-1 ring-accent/35"
+                                  : train.isPast
+                                    ? "bg-surface-raised text-text-secondary"
+                                    : "bg-surface-raised text-text-primary",
                             )}
                             aria-label={buildTrainAriaLabel(train)}
                           >
@@ -304,6 +338,12 @@ export function SchedulePage() {
                                 {train.isCurrent ? "Сейчас" : "Ближайший"}
                               </span>
                             )}
+                            {train.sourceTime === scheduleHighlightedTrainTime &&
+                              scheduleHighlightLabel && (
+                                <span className="text-[11px] text-accent">
+                                  {scheduleHighlightLabel}
+                                </span>
+                              )}
                             {train.isLast && (
                               <span className="text-[11px] uppercase tracking-wide text-text-secondary">
                                 Последний
@@ -351,7 +391,7 @@ function getModeTitle(
     return "";
   }
 
-  if (mode === "today") {
+  if (mode === "today" || mode === "date") {
     if (schedule.isPreviousOperationalDay && schedule.serviceDate) {
       return `Ночная часть расписания за ${formatRussianDayMonth(schedule.serviceDate)}`;
     }
@@ -374,7 +414,7 @@ function getModeSubtitle(
     return "";
   }
 
-  if (mode !== "today") {
+  if (mode === "weekday" || mode === "weekend") {
     return mode === "weekday" ? "Будний день" : "Выходной день";
   }
 
@@ -397,14 +437,14 @@ function buildContextLabel(
   }
 
   if (
-    schedule.mode === "today" &&
+    (schedule.mode === "today" || schedule.mode === "date") &&
     schedule.isPreviousOperationalDay &&
     schedule.serviceDate
   ) {
     return `Ночная часть расписания за ${formatRussianDayMonth(schedule.serviceDate)}`;
   }
 
-  if (schedule.mode === "today" && schedule.serviceDate) {
+  if ((schedule.mode === "today" || schedule.mode === "date") && schedule.serviceDate) {
     return `${formatRussianDayMonth(schedule.serviceDate)} · ${getCompactDayTypeLabel(schedule.dayType)}`;
   }
 

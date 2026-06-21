@@ -1,14 +1,19 @@
 import { schedule } from "../../data/schedule";
 import { specialDates } from "../../data/specialDates";
 import type { MetroTime } from "../time";
-import { timeStringToSeconds } from "../time";
+import {
+  isWeekendMetroDate,
+  metroOperationalSecondsToTimestamp,
+  shiftMetroDateString,
+  timeStringToSeconds,
+} from "../time";
 import type { DayType, DirectionId, StationId } from "./metro.types";
 
 export type TrainStatus = "waiting" | "approaching" | "arriving" | "error";
 export type UpcomingStatus = "ok" | "not_found" | "error";
 export type MetroRuntimeStatus = "running" | "before_open" | "after_close" | "error";
 export type ServiceDayType = DayType | "special";
-export type DayScheduleMode = "today" | "weekday" | "weekend";
+export type DayScheduleMode = "today" | "date" | "weekday" | "weekend";
 export type DayScheduleStatus = "ok" | "error";
 
 export interface NearestTrain {
@@ -45,7 +50,7 @@ export interface MetroServiceState {
 export interface DayScheduleTrain {
   sourceTime: string;
   displayTime: string;
-  absoluteTimestamp?: number;
+  absoluteTimestamp?: number | undefined;
   operationalMinutes: number;
   displayHour: number;
   displayMinute: number;
@@ -222,18 +227,21 @@ export function resolveMetroState(
   metroTime: MetroTime,
 ): MetroServiceState {
   const currentDate = metroTime.dateString;
-  const previousDate = shiftDateString(currentDate, -1);
-  const nextDate = shiftDateString(currentDate, 1);
+  const previousDate = shiftMetroDateString(currentDate, -1);
+  const nextDate = shiftMetroDateString(currentDate, 1);
 
   const currentDayContext = getServiceDayContextForDate(
     currentDate,
-    isWeekendDate(currentDate),
+    isWeekendMetroDate(currentDate),
   );
   const previousDayContext = getServiceDayContextForDate(
     previousDate,
-    isWeekendDate(previousDate),
+    isWeekendMetroDate(previousDate),
   );
-  const nextDayContext = getServiceDayContextForDate(nextDate, isWeekendDate(nextDate));
+  const nextDayContext = getServiceDayContextForDate(
+    nextDate,
+    isWeekendMetroDate(nextDate),
+  );
 
   return resolveMetroStateFromSchedules({
     currentSchedule: getScheduleFor(
@@ -272,11 +280,11 @@ export function resolveMetroStateFromSchedules(
     previousSchedule = null,
     previousDayType = currentDayType,
     previousServiceDayType = previousDayType,
-    previousDate = shiftDateString(currentDate, -1),
+    previousDate = shiftMetroDateString(currentDate, -1),
     nextSchedule = null,
     nextDayType = currentDayType,
     nextServiceDayType = nextDayType,
-    nextDate = shiftDateString(currentDate, 1),
+    nextDate = shiftMetroDateString(currentDate, 1),
   } = options;
 
   if (!currentSchedule || currentSchedule.length === 0) {
@@ -401,6 +409,10 @@ export function resolveDaySchedule(
   metroTime: MetroTime,
   mode: DayScheduleMode,
 ): DayScheduleResult {
+  if (mode === "date") {
+    return resolveDayScheduleForDate(stationId, directionId, metroTime.dateString);
+  }
+
   if (mode === "today") {
     const metroState = resolveMetroState(stationId, directionId, metroTime);
     const currentSchedule = getScheduleFor(
@@ -461,6 +473,50 @@ export function resolveDaySchedule(
       mode,
       dayType: scheduleDayType,
       scheduleDayType,
+      scheduleTimes,
+    }),
+    null,
+    "ok",
+    false,
+  );
+}
+
+export function resolveDayScheduleForDate(
+  stationId: StationId,
+  directionId: DirectionId,
+  dateString: string,
+): DayScheduleResult {
+  const serviceDayContext = getServiceDayContextForDate(
+    dateString,
+    isWeekendMetroDate(dateString),
+  );
+  const scheduleTimes = getScheduleFor(
+    stationId,
+    directionId,
+    serviceDayContext.scheduleDayType,
+  );
+
+  if (!scheduleTimes || scheduleTimes.length === 0) {
+    return buildEmptyDayScheduleResult({
+      stationId,
+      directionId,
+      mode: "date",
+      dayType: serviceDayContext.serviceDayType,
+      scheduleDayType: serviceDayContext.scheduleDayType,
+      serviceDate: dateString,
+      isPreviousOperationalDay: false,
+      message: "Для этой станции и направления расписание не найдено",
+    });
+  }
+
+  return materializeDayScheduleResult(
+    getOrCreateDayScheduleBase({
+      stationId,
+      directionId,
+      mode: "date",
+      serviceDate: dateString,
+      dayType: serviceDayContext.serviceDayType,
+      scheduleDayType: serviceDayContext.scheduleDayType,
       scheduleTimes,
     }),
     null,
@@ -539,18 +595,6 @@ function buildErrorState(
     secondsUntilFirstTrain: null,
     message,
   };
-}
-
-function shiftDateString(dateString: string, days: number): string {
-  const date = new Date(`${dateString}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
-function isWeekendDate(dateString: string): boolean {
-  const date = new Date(`${dateString}T00:00:00Z`);
-  const dayOfWeek = date.getUTCDay();
-  return dayOfWeek === 0 || dayOfWeek === 6;
 }
 
 function getOperationalNowSeconds(
@@ -662,6 +706,10 @@ function materializeDayScheduleResult(
     operationalMinutes: train.operationalMinutes,
     displayHour: train.displayHour,
     displayMinute: train.displayMinute,
+    absoluteTimestamp:
+      base.serviceDate !== undefined
+        ? metroOperationalSecondsToTimestamp(base.serviceDate, train.operationalSeconds)
+        : undefined,
     isAfterMidnight: train.isAfterMidnight,
     isPast:
       currentSeconds === null

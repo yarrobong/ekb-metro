@@ -87,4 +87,26 @@ test.describe("metro time states", () => {
     await expect(page.getByText("Ближайший")).toBeVisible();
     await expect(page.getByText("24:01")).not.toBeVisible();
   });
+
+  test("plans an after-midnight arrival without showing 24-hour overflow", async ({
+    page,
+  }) => {
+    await seedMetroTime(page, TEST_TIME_31_SECONDS);
+    await openApp(page);
+
+    await selectRoute(page, "Геологическая", "В сторону Ботанической");
+    await page.getByRole("button", { name: "Выбрать станцию" }).click();
+    await page.getByRole("button", { name: /Ботаническая/i }).click();
+
+    await page.getByRole("button", { name: /Прибыть ко времени/i }).click();
+    await page.getByRole("radio", { name: "Завтра" }).click();
+    await page.locator('input[type="time"]').fill("00:20");
+    await page.getByRole("button", { name: "Рассчитать поездку" }).click();
+
+    await expect(page.getByText("Успеваете")).toBeVisible();
+    await expect(page.getByText("00:01")).toBeVisible();
+    await expect(page.getByText("Прибытие примерно в 00:07")).toBeVisible();
+    await expect(page.getByText("Запас: 13 минут")).toBeVisible();
+    await expect(page.getByText("24:01")).not.toBeVisible();
+  });
 });
