@@ -6,7 +6,13 @@
 
 [Открыть Metro EKB на GitHub Pages](https://yarrobong.github.io/ekb-metro/)
 
-![Metro EKB — основной экран](docs/screenshots/1.png)
+<p align="center">
+  <img
+    src="docs/screenshots/1.png"
+    alt="Metro EKB — основной экран"
+    width="340"
+  />
+</p>
 
 ## Возможности
 
@@ -50,13 +56,33 @@
 
 ## Screenshots
 
-![Выбор станции и направления](docs/screenshots/2.png)
+<p align="center">
+  <img
+    src="docs/screenshots/2.png"
+    alt="Выбор станции"
+    width="260"
+  />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img
+    src="docs/screenshots/3.png"
+    alt="Ближайший поезд и маршрут"
+    width="260"
+  />
+</p>
 
-![Ближайший поезд и маршрут до станции назначения](docs/screenshots/3.png)
-
-![Arrival planner](docs/screenshots/1.png)
-
-![Mobile dark theme](docs/screenshots/4.png)
+<p align="center">
+  <img
+    src="docs/screenshots/1.png"
+    alt="Arrival planner"
+    width="260"
+  />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img
+    src="docs/screenshots/4.png"
+    alt="Тёмная тема"
+    width="260"
+  />
+</p>
 
 ## Архитектура
 
