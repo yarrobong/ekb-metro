@@ -13,6 +13,14 @@
 - `src/pages`: station selection, trains, settings, install, and about screens.
 - `src/components`: reusable UI plus metro-specific interaction components.
 
+The trains screen keeps composition, data preparation, and presentation separate:
+
+- `src/pages/TrainsPage.tsx` composes the screen and wires actions together;
+- `src/pages/trains/useTrainsPageModel.ts` reads session state and prepares domain data;
+- `src/pages/trains/trainsPage.utils.ts` contains view-specific labels and ordering helpers;
+- `src/components/metro/trains`: props-driven empty, direction, timer, upcoming-trains,
+  destination, and arrival-planner blocks.
+
 ## State model
 
 - Zustand stores the current screen, route selection, destination selection, and toast state.

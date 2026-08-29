@@ -1,134 +1,149 @@
-# Метро Екатеринбурга
+# Metro EKB
 
-Неофициальное статическое PWA-приложение с расчётным временем прибытия поездов Екатеринбургского метрополитена. Приложение помогает выбрать станцию и направление, увидеть ближайший поезд, следующие рейсы и оценить время поездки до станции назначения.
+Неофициальное PWA-приложение для Екатеринбургского метрополитена: выберите станцию и направление, посмотрите ближайшие отправления, рассчитайте поездку до станции назначения и подберите поезд к нужному времени прибытия.
 
-Предполагаемый production URL для GitHub Pages:
-`https://yarrobong.github.io/ekb-metro/`
+## Live Demo
 
-## Статус
+[Открыть Metro EKB на GitHub Pages](https://yarrobong.github.io/ekb-metro/)
 
-- Приложение остаётся release candidate и не должно описываться как уже опубликованный production.
-- Расчёты основаны на локально сохранённом расписании и не заменяют фактическую информацию метрополитена.
-- Приложение не является официальным сервисом Екатеринбургского метрополитена.
+![Metro EKB — основной экран](docs/screenshots/hero-desktop.png)
 
-## Стек
+## Возможности
 
-- React 19
-- TypeScript
-- Vite
-- Tailwind CSS
-- Zustand
-- Zod
-- Lucide React
-- Vitest + React Testing Library
-- `vite-plugin-pwa`
+- выбор текущей станции по интерактивной схеме линии;
+- выбор допустимого направления, ближайший поезд и следующие четыре отправления;
+- первый и последний поезд для текущей станции и полный дневной график;
+- расчёт количества станций, времени в пути и ориентировочного прибытия;
+- планирование поездки к указанному времени, включая рейсы после полуночи;
+- автоматическая, светлая и тёмная темы с сохранением пользовательского выбора;
+- установка как PWA и работа основных экранов без сети после первой загрузки;
+- mobile-first интерфейс с keyboard-friendly controls и focus states.
 
-## Менеджер пакетов
+## Tech Stack
 
-В проекте используется только `npm`.
+- React 19 + TypeScript;
+- Vite + Tailwind CSS;
+- Zustand для session state и пользовательских настроек;
+- Zod для валидации локальных данных расписания;
+- Vitest + React Testing Library для unit/component tests;
+- Playwright для end-to-end сценариев;
+- `vite-plugin-pwa` для manifest и service worker;
+- GitHub Actions + GitHub Pages для CI/CD и production deployment.
 
-```bash
-npm ci
+## Технические особенности
+
+### Domain-слой и page model
+
+Расписание, операционный день, временные зоны, маршрут и расчёт поездки находятся в `src/domain`. UI-компоненты получают подготовленные данные через props и не дублируют алгоритмы расчёта.
+
+`TrainsPage` отвечает за композицию экрана. Store-подключение и подготовка данных собраны в `src/pages/trains/useTrainsPageModel.ts`, а самостоятельные блоки находятся в `src/components/metro/trains/`.
+
+### Операционный день метро
+
+Календарная дата и операционный день метро — не одно и то же. Рейсы после полуночи могут логически относиться к предыдущему операционному дню. Domain-сервис учитывает эту границу отдельно: ночная часть расписания остаётся в конце графика, а в интерфейсе отображается обычное время `00:xx`, без искусственных значений вроде `24:xx`.
+
+Все расчёты используют часовой пояс `Asia/Yekaterinburg`. Переходы до открытия, после закрытия, первый/последний поезд и arrival planner покрыты тестами.
+
+### Локальные данные
+
+Приложение полностью client-side. Расписание и нормативные времена перегонов входят в production bundle из `src/data/*`; runtime API, backend, база данных и GPS/realtime tracking не используются. Скрипт `npm run validate:data` проверяет целостность станций, направлений, графика и времён перегонов до сборки.
+
+## Screenshots
+
+![Выбор станции и направления](docs/screenshots/station-selection.png)
+
+![Ближайший поезд и маршрут до станции назначения](docs/screenshots/train-details.png)
+
+![Arrival planner](docs/screenshots/route-planner.png)
+
+![Mobile dark theme](docs/screenshots/mobile-dark.png)
+
+## Архитектура
+
+```text
+src/
+├── app/                  shell, Zustand store, theme и PWA context
+├── components/
+│   ├── metro/             карта, destination sheet и route cards
+│   └── metro/trains/      props-driven блоки TrainsPage
+├── data/                 локальные станции, направления и расписание
+├── domain/
+│   ├── metro/             расписание, операционный день и поездки
+│   └── time/              timezone-aware time helpers
+├── pages/                 экраны приложения
+│   └── trains/            TrainsPage model и presentation utils
+└── styles/                Tailwind/CSS tokens и responsive styles
 ```
 
-## Команды
+## Testing и CI/CD
+
+Локальный release-check:
 
 ```bash
-npm run dev
-npm run validate:data
+npm run format:check
 npm run typecheck
 npm run lint
-npm run format:check
+npm run validate:data
 npm run test:run
 npm run test:e2e
 npm run build
 ```
 
+Проверки включают domain-логику времени и расписания, component behavior, маршруты и destination selection, theme/PWA flows, offline smoke test, responsive layout и сценарии после полуночи.
+
+GitHub Actions запускает `verify` и отдельный `playwright` job. GitHub Pages deployment разрешён только после успешного завершения обоих jobs; для pull request deployment не выполняется.
+
+## PWA и offline
+
+Production build генерирует manifest и service worker через `vite-plugin-pwa` (`generateSW`). App shell и bundled local data кэшируются после первой успешной загрузки, поэтому основные экраны доступны без сети. Обновление приложения применяется только после явного действия пользователя через update prompt.
+
+Base path production-сборки: `/ekb-metro/`.
+
 ## Локальный запуск
+
+В проекте используется только `npm`:
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Dev-сервер поднимается на `http://localhost:3000`.
+Dev server: `http://localhost:3000`.
 
-## Production preview
+Для production preview:
 
 ```bash
 npm run build
 npm run preview
 ```
 
-Production base path для сборки: `/ekb-metro/`.
+E2E запускается кроссплатформенно через `npm run test:e2e`; Playwright автоматически собирает E2E build и поднимает preview server на `http://127.0.0.1:4173/ekb-metro/`.
 
-## Что умеет приложение
+## Источник расписания
 
-- выбор текущей станции по интерактивной схеме линии;
-- выбор допустимого направления;
-- отображение ближайшего поезда, точного времени и ещё четырёх следующих поездов;
-- компактная карточка с первым и последним поездом для выбранной станции и направления;
-- полный экран расписания на день с режимами `Сегодня`, `Будни` и `Выходные`;
-- корректное отображение отправлений после полуночи как части текущего операционного дня;
-- корректная обработка операционного дня после полуночи в часовом поясе `Asia/Yekaterinburg`;
-- расчёт количества станций, ориентировочного времени в пути и прибытия;
-- автоматическая, светлая и тёмная темы оформления;
-- сохранение пользовательских настроек темы и секунд локально в браузере;
-- PWA-установка и офлайн-работа после первой успешной загрузки.
+Канонические данные находятся в:
 
-## Офлайн и PWA
+- `src/data/schedule.ts`;
+- `src/data/stations.ts`;
+- `src/data/directions.ts`;
+- `src/data/driveTimes.ts`;
+- `src/data/specialDates.ts`;
+- `src/data/metadata.ts`.
 
-- используется Service Worker со стратегией `generateSW`;
-- приложение кэширует app shell и локальные данные расписания;
-- после первой онлайн-загрузки основные экраны работают без сети;
-- обновление применяется только после явного действия пользователя.
+Для сверки используется [официальный график работы Екатеринбургского метрополитена](https://metro-ektb.ru/rezhim-raboty-metropolitena-grafik_1211/). Изменения расписания нужно вносить только после проверки источника и обязательно подтверждать `npm run validate:data`.
 
-## Настройки
+## Disclaimer
 
-- по умолчанию приложение использует режим темы `Автоматически` и следует теме устройства;
-- пользователь может явно выбрать `Светлая` или `Тёмная`;
-- сохраняется только локальный пользовательский выбор в `LocalStorage`;
-- выбор станции, направления и маршрута не восстанавливается после полного перезапуска приложения.
+Metro EKB — неофициальное приложение и не связано с Екатеринбургским метрополитеном. Расчёты выполняются на основе локально сохранённого расписания и нормативных времён перегонов; они не показывают фактическое положение поездов в реальном времени и могут отличаться от реального движения.
 
-## Источник данных
+## Release
 
-Основной локальный источник расписания:
+Текущая версия проекта: `1.0.0`.
 
-- `src/data/schedule.ts`
-- `src/data/stations.ts`
-- `src/data/directions.ts`
-- `src/data/driveTimes.ts`
-- `src/data/specialDates.ts`
-- `src/data/metadata.ts`
+Планируемый tag: `v1.0.0`
 
-Официальный источник для сверки:
-[metro-ektb.ru/rezhim-raboty-metropolitena-grafik_1211](https://metro-ektb.ru/rezhim-raboty-metropolitena-grafik_1211/)
+Название: **Metro EKB v1.0 — Portfolio Release**
 
-Важно:
+## Feedback
 
-- не придумывать времена поездов;
-- не подменять реальные данные демо-значениями;
-- любые изменения расписания проверять через `npm run validate:data`.
-
-## Структура проекта
-
-```text
-src/app        оболочка приложения, Zustand stores, theme bootstrap, PWA context
-src/components UI и метро-компоненты
-src/pages      основные экраны приложения
-src/domain     доменная логика времени, расписания и маршрутов
-src/data       локальные данные метро
-src/lib        клиентские пользовательские действия и утилиты
-src/test       test setup и моки
-tests/e2e      Playwright-сценарии основных пользовательских потоков
-scripts        служебные проверки данных
-public         иконки, favicon, 404 fallback
-docs           эксплуатационная документация
-```
-
-## Обратная связь
-
-Основной канал сообщений об ошибках:
-[GitHub Issues](https://github.com/yarrobong/ekb-metro/issues)
-
-Приложение подготавливает текст issue с контекстом маршрута, временем Екатеринбурга, версией приложения и версией расписания, но без персональных данных, IP и геолокации.
+[Сообщить об ошибке через GitHub Issues](https://github.com/yarrobong/ekb-metro/issues)

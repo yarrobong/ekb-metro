@@ -92,6 +92,7 @@ jobs:
     if: github.event_name != 'pull_request'
     needs:
       - verify
+      - playwright
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "npm run validate:data && tsc -b && vite build",
-    "build:e2e": "VITE_E2E=true npm run build",
+    "build:e2e": "tsx scripts/build-e2e.ts",
     "preview": "vite preview",
     "preview:e2e": "tsx scripts/preview-e2e.ts",
     "typecheck": "tsc -b --pretty false",
@@ -15,8 +15,9 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "test": "vitest",
-    "test:run": "vitest run",
+    "test:run": "vitest run --pool=forks --maxWorkers=1",
     "test:e2e": "playwright test",
+    "screenshots": "tsx scripts/capture-screenshots.ts",
     "test:e2e:ui": "playwright test --ui",
     "validate:data": "tsx scripts/validate-metro-data.ts"
   },
